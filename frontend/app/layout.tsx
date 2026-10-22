@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Interview Coach — Voice Studio & Placement Prep",
   description: "Master technical and behavioral interviews with real-time AI voice simulations, adaptive rubrics, and automated debriefs.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#F4F1EA",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
