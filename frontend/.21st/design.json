@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "project": {
+    "name": "frontend",
+    "productType": null,
+    "stack": [
+      "nextjs",
+      "react",
+      "tailwind-v4"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "app/globals.css"
+    ],
+    "components": [],
+    "assets": [],
+    "instructions": [
+      "AGENTS.md"
+    ]
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--accent-indigo": {
+        "value": "#4F46E5",
+        "source": "app/globals.css"
+      },
+      "--border-light": {
+        "value": "#E2E8F0",
+        "source": "app/globals.css"
+      },
+      "--muted-graphite": {
+        "value": "#64748B",
+        "source": "app/globals.css"
+      }
+    },
+    "typography": {
+      "--text-graphite": {
+        "value": "#0F172A",
+        "source": "app/globals.css"
+      }
+    },
+    "spacing": {
+      "--bg-workspace": {
+        "value": "#F8F9FA",
+        "source": "app/globals.css"
+      }
+    },
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [],
+  "evidence": [
+    {
+      "fact": "design.colorMode:light",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "app/globals.css"
+    },
+    {
+      "fact": "project.instructions",
+      "source": "AGENTS.md"
+    },
+    {
+      "fact": "project.stack:nextjs",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-10-22T14:31:42.651Z"
+}
