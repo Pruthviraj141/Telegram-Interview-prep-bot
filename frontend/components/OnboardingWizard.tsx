@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api, CandidateUser, CandidateProfile } from "@/lib/api";
-import { Key, FileText, CheckCircle2, Sparkles, ArrowRight, ShieldCheck, Upload, AlertCircle, RefreshCw } from "lucide-react";
+import { Key, FileText, CheckCircle2, Sparkles, ArrowRight, ShieldCheck, Upload, AlertCircle, RefreshCw, Lock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface OnboardingWizardProps {
   initialUser: CandidateUser;
@@ -27,7 +28,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
   const [targetCompany, setTargetCompany] = useState<string>("");
   const [seniority, setSeniority] = useState<string>("Fresher / Early Career");
   const [targetDate, setTargetDate] = useState<string>("Within 30 Days");
-  const [interviewType, setInterviewType] = useState<string>("mixed");
+  const [interviewType, setInterviewType] = useState<string>("dsa");
 
   useEffect(() => {
     // Map backend onboarding state to wizard step
@@ -40,7 +41,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
         break;
       case "AWAITING_PROFILE_CONFIRM":
         setStep(3);
-        // Fetch current resume profile if available
         api.getResume().then((res) => {
           if (res?.parsed_profile) setExtractedProfile(res.parsed_profile);
         }).catch(() => {});
@@ -60,7 +60,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
     setError(null);
     setLoading(true);
     try {
-      await api.setupGroqKey(groqKey);
+      await api.setupGroqKey(groqKey.trim());
       const updated = await api.getMe();
       setUser(updated);
       setStep(2);
@@ -75,7 +75,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
   const handleResumeUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resumeFile) {
-      setError("Please select a PDF or DOCX resume.");
+      setError("Please select a PDF or DOCX resume document.");
       return;
     }
     setError(null);
@@ -132,47 +132,62 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
     }
   };
 
+  const stepsMeta = [
+    { num: 1, label: "Groq Key", short: "Key" },
+    { num: 2, label: "Resume Upload", short: "Resume" },
+    { num: 3, label: "Profile Verification", short: "Profile" },
+    { num: 4, label: "Preparation Goals", short: "Goals" },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4 sm:px-6">
-      {/* Stepper Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-          <span className={step >= 1 ? "text-[#5967F2]" : ""}>1. Groq Key</span>
-          <span className={step >= 2 ? "text-[#5967F2]" : ""}>2. Resume</span>
-          <span className={step >= 3 ? "text-[#5967F2]" : ""}>3. Profile</span>
-          <span className={step >= 4 ? "text-[#5967F2]" : ""}>4. Prep Goals</span>
-        </div>
-        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-          <div
-            className="bg-[#5967F2] h-full transition-all duration-300"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+    <div className="max-w-2xl mx-auto py-6 sm:py-16 px-3.5 sm:px-6 font-sans">
+      {/* Stepper Header (Apple segmented progress) */}
+      <div className="mb-6 sm:mb-10 space-y-2 sm:space-y-3">
+        <div className="grid grid-cols-4 gap-2 text-center">
+          {stepsMeta.map((s) => (
+            <div key={s.num} className="space-y-1">
+              <div className="text-[10px] sm:text-[11px] font-semibold tracking-tight text-slate-700">
+                <span className={cn(step === s.num ? "text-[#20232C] font-bold" : "text-slate-400")}>
+                  <span className="sm:hidden">{s.short}</span>
+                  <span className="hidden sm:inline">{s.label}</span>
+                </span>
+              </div>
+              <div
+                className={cn(
+                  "h-1 rounded-full transition-all duration-300",
+                  step >= s.num ? "bg-[#20232C]" : "bg-slate-200"
+                )}
+              />
+            </div>
+          ))}
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-800 text-sm">
-          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-          <div>{error}</div>
+        <div className="mb-5 p-3.5 sm:p-4 bg-rose-50 border border-rose-200/80 rounded-2xl flex items-start gap-3 text-rose-800 text-xs shadow-xs">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="font-medium">{error}</div>
         </div>
       )}
 
       {/* Step 1: Groq Key Setup */}
       {step === 1 && (
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 shadow-sm">
-          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-[#5967F2] mb-5">
-            <Key className="w-6 h-6" />
+        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+            <Key className="w-5 h-5" />
           </div>
-          <h2 className="text-2xl font-bold text-[#20232C] mb-2">Connect Your Groq API Key</h2>
-          <p className="text-sm text-slate-600 leading-relaxed mb-6">
-            To provide turn-by-turn voice interviews and private answer evaluation without token limits,
-            the AI Interview Coach uses your own Groq key. It is validated directly with Groq,
-            encrypted at rest using Fernet authenticated encryption, and never shared or exposed in client storage.
-          </p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Connect Groq API Key</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
+              To provide turn-by-turn voice interviews and private rubric evaluation without token limits,
+              the coach uses your own Groq key. It is validated against Groq, encrypted at rest using
+              Fernet cryptography, and never returned to browser storage.
+            </p>
+          </div>
 
           <form onSubmit={handleKeySubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Groq API Key
               </label>
               <input
@@ -181,38 +196,40 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 placeholder="gsk_..."
                 value={groqKey}
                 onChange={(e) => setGroqKey(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5967F2] focus:border-transparent"
+                className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-base sm:text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
-              <span className="block mt-2 text-xs text-slate-500">
-                Obtain your free API key at{" "}
+              <span className="block mt-2 text-[11px] text-slate-500">
+                Obtain a free key at{" "}
                 <a
                   href="https://console.groq.com/keys"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[#5967F2] underline font-medium"
+                  className="text-[#4F46E5] hover:underline font-semibold"
                 >
                   console.groq.com/keys
                 </a>
               </span>
             </div>
 
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center gap-3 text-xs text-slate-600">
-              <ShieldCheck className="w-4 h-4 text-[#168A72] shrink-0" />
-              <span>Zero secret leakage: Plaintext is never returned to browser or logs.</span>
+            <div className="p-3.5 bg-[#FAFAF8] rounded-2xl border border-[#E8E5DD] flex items-center gap-3 text-xs text-slate-600">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Encrypted at rest: Plaintext keys are never logged or exposed.</span>
             </div>
 
             <button
               type="submit"
               disabled={loading || !groqKey.trim()}
-              className="w-full py-3.5 px-6 bg-[#5967F2] hover:bg-[#4855D6] text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+              className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Validating against Groq...
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Validating Key against Groq...</span>
                 </>
               ) : (
                 <>
-                  Validate & Save Securely <ArrowRight className="w-4 h-4" />
+                  <span>Save & Continue to Resume</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -220,25 +237,27 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
         </div>
       )}
 
-      {/* Step 2: Mandatory Resume Upload */}
+      {/* Step 2: Resume Upload */}
       {step === 2 && (
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 shadow-sm">
-          <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-[#168A72] mb-5">
-            <FileText className="w-6 h-6" />
+        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+            <FileText className="w-5 h-5" />
           </div>
-          <h2 className="text-2xl font-bold text-[#20232C] mb-2">Upload Candidate Resume</h2>
-          <p className="text-sm text-slate-600 leading-relaxed mb-6">
-            A resume is mandatory to ensure every interview simulates real placement panels.
-            Our local parser securely extracts your projects, claimed tools, and experience so questions probe authentic claims.
-          </p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Upload Candidate Resume</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
+              Every interview simulates real hiring panels. Our local parser extracts your actual projects, claimed skills,
+              and experience so Project Defence questions probe authentic engineering claims.
+            </p>
+          </div>
 
-          <form onSubmit={handleResumeUpload} className="space-y-5">
-            <div className="border-2 border-dashed border-slate-300 hover:border-[#5967F2] rounded-2xl p-8 text-center transition bg-slate-50/50">
-              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-              <p className="text-sm font-medium text-slate-700 mb-1">
-                {resumeFile ? resumeFile.name : "Choose PDF or DOCX resume"}
+          <form onSubmit={handleResumeUpload} className="space-y-4 sm:space-y-5">
+            <div className="border border-dashed border-slate-300 hover:border-slate-400 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center transition bg-[#FAFAF8]">
+              <Upload className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-slate-800 mb-1">
+                {resumeFile ? resumeFile.name : "Select PDF or DOCX resume document"}
               </p>
-              <p className="text-xs text-slate-500 mb-4">Maximum file size: 5 MB</p>
+              <p className="text-[11px] text-slate-400 mb-3.5">Max file size: 5 MB</p>
               <input
                 type="file"
                 id="resume-file"
@@ -252,24 +271,26 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
               />
               <label
                 htmlFor="resume-file"
-                className="inline-block py-2 px-4 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer transition shadow-2xs"
+                className="inline-block py-2.5 px-4 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 text-xs font-semibold rounded-xl cursor-pointer transition shadow-xs min-h-[40px]"
               >
-                Browse Document
+                Browse File
               </label>
             </div>
 
             <button
               type="submit"
               disabled={loading || !resumeFile}
-              className="w-full py-3.5 px-6 bg-[#5967F2] hover:bg-[#4855D6] text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+              className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Extracting & Analyzing Profile...
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Parsing Projects & Skills...</span>
                 </>
               ) : (
                 <>
-                  Parse & Review Profile <ArrowRight className="w-4 h-4" />
+                  <span>Extract Profile & Continue</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
@@ -277,21 +298,23 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
         </div>
       )}
 
-      {/* Step 3: Review & Edit Extracted Profile */}
+      {/* Step 3: Review Extracted Profile */}
       {step === 3 && extractedProfile && (
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 shadow-sm">
-          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-[#5967F2] mb-5">
-            <CheckCircle2 className="w-6 h-6" />
+        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-[#20232C] mb-2">Review Extracted Profile</h2>
-          <p className="text-sm text-slate-600 leading-relaxed mb-6">
-            Review the skills and projects extracted from your resume. Your confirmed edits become the canonical interview context.
-          </p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Verify Extracted Profile</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
+              Review the skills and projects extracted from your resume. You can edit any details below before they become your interview context.
+            </p>
+          </div>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3.5 sm:space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                Target Role
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Primary Target Role
               </label>
               <input
                 type="text"
@@ -299,12 +322,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 onChange={(e) =>
                   setExtractedProfile({ ...extractedProfile, primary_role: e.target.value })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Programming Languages
               </label>
               <input
@@ -316,12 +339,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     programming_languages: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Frameworks & Tools
               </label>
               <input
@@ -333,13 +356,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     frameworks_and_tools: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                Notable Projects (Will be probed in Project Defence)
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Notable Projects (Probed during Project Defence)
               </label>
               <textarea
                 rows={2}
@@ -350,7 +373,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     notable_projects: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C] resize-none"
               />
             </div>
           </div>
@@ -358,27 +381,29 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
           <button
             onClick={handleProfileConfirm}
             disabled={loading}
-            className="w-full py-3.5 px-6 bg-[#5967F2] hover:bg-[#4855D6] text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm"
+            className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm cursor-pointer min-h-[44px]"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Confirm Profile & Continue"}
           </button>
         </div>
       )}
 
-      {/* Step 4: Conversational Placement Setup */}
+      {/* Step 4: Placement Preparation Setup */}
       {step === 4 && (
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 shadow-sm">
-          <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 mb-5">
-            <Sparkles className="w-6 h-6" />
+        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <h2 className="text-2xl font-bold text-[#20232C] mb-2">Set Your Placement Goals</h2>
-          <p className="text-sm text-slate-600 leading-relaxed mb-6">
-            Tell us what role and company you are preparing for. We'll calibrate your question difficulty and construct your adaptive preparation roadmap.
-          </p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Set Placement Goals</h2>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
+              Tell us your target role and timeline. We will calibrate interview difficulty and construct your adaptive preparation roadmap.
+            </p>
+          </div>
 
-          <form onSubmit={handlePrepSubmit} className="space-y-4">
+          <form onSubmit={handlePrepSubmit} className="space-y-3.5 sm:space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Target Role
               </label>
               <input
@@ -387,32 +412,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
                 placeholder="e.g. Backend Software Engineer"
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Target Company (Optional)
               </label>
               <input
                 type="text"
                 value={targetCompany}
                 onChange={(e) => setTargetCompany(e.target.value)}
-                placeholder="e.g. Google, Microsoft, Infosys, or Campus Drive"
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm"
+                placeholder="e.g. Google, Amazon, TCS, or Campus Drive"
+                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Seniority Level
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Seniority
                 </label>
                 <select
                   value={seniority}
                   onChange={(e) => setSeniority(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 bg-white"
                 >
                   <option value="Intern / Fresher">Intern / Fresher</option>
                   <option value="Junior (1-2 yrs)">Junior (1-2 yrs)</option>
@@ -421,18 +446,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Interview Style
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Initial Focus Style
                 </label>
                 <select
                   value={interviewType}
                   onChange={(e) => setInterviewType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm bg-white"
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 bg-white"
                 >
-                  <option value="mixed">Mixed (Tech, Projects, STAR)</option>
-                  <option value="technical">Technical Fundamentals</option>
+                  <option value="dsa">DSA & Coding Patterns</option>
+                  <option value="system_design">System Architecture</option>
+                  <option value="technical">Core CS Drill</option>
                   <option value="project_defence">Project Defence</option>
-                  <option value="hr">HR / Behavioral</option>
+                  <option value="mixed">Comprehensive Mixed</option>
                 </select>
               </div>
             </div>
@@ -440,13 +466,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
             <button
               type="submit"
               disabled={loading || !targetRole.trim()}
-              className="w-full mt-4 py-3.5 px-6 bg-[#168A72] hover:bg-[#12725E] text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+              className="w-full mt-3 sm:mt-4 py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  Generate Roadmap & Enter Studio <ArrowRight className="w-4 h-4" />
+                  <span>Complete Setup & Enter Studio</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
