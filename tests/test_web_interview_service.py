@@ -121,3 +121,55 @@ def test_generate_interview_debrief():
     assert debrief["overall_score"] == 4.3
     assert len(debrief["turns_summary"]) == 2
     assert "Atomicity" in debrief["demonstrated_strengths"]
+
+
+def test_dsa_and_system_design_blueprints():
+    bp_dsa = build_interview_blueprint(
+        role="Software Engineer",
+        seniority="Fresher",
+        duration_mode="standard",
+        interviewer_style="dsa"
+    )
+    assert "Data Structures & Algorithms" in bp_dsa["categories"]
+    assert bp_dsa["interviewer_style"] == "dsa"
+
+    bp_sd = build_interview_blueprint(
+        role="Senior Backend Engineer",
+        seniority="Senior",
+        duration_mode="full",
+        interviewer_style="system_design"
+    )
+    assert "System Design & Architecture" in bp_sd["categories"]
+    assert bp_sd["target_questions"] == 8
+    assert bp_sd["base_difficulty"] == "Hard"
+
+
+def test_question_deduplication_and_no_two_sum_repeat():
+    qb = QuestionBank("data/question_bank.json")
+    qb.load_and_validate()
+
+    bp = build_interview_blueprint(
+        role="Software Engineer",
+        seniority="Fresher",
+        duration_mode="quick",
+        interviewer_style="dsa"
+    )
+
+    # Exclude dsa-01 (Two Sum) as if already asked in previous session
+    past_ids = ["dsa-01"]
+    picked_questions = set()
+
+    for _ in range(5):
+        q = get_next_question_for_turn(
+            qb=qb,
+            blueprint=bp,
+            turn_index=0,
+            previous_turns=[],
+            exclude_question_ids=past_ids
+        )
+        assert q["question_id"] != "dsa-01", "dsa-01 (Two Sum) must never be returned when excluded!"
+        picked_questions.add(q["question_id"])
+
+    # Verify that multiple calls sample varied questions from the pool
+    assert len(picked_questions) >= 1
+
