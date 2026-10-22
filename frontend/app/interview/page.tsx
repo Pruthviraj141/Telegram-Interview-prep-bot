@@ -138,14 +138,14 @@ function InterviewContent() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/60 text-xs">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-bold text-[#5967F2] shadow-xs">
-                  {user.first_name?.[0] || "U"}
+                  {(user.display_name || user.email || "C")[0].toUpperCase()}
                 </div>
                 <div>
                   <div className="font-semibold text-slate-800">
                     Candidate Profile: {user.target_role || "Software Engineer"}
                   </div>
                   <div className="text-slate-500 text-[11px]">
-                    Seniority: <span className="font-medium text-slate-700">{user.seniority || "Fresher"}</span> • Focus: <span className="font-medium text-slate-700">{user.target_domain || "General Tech"}</span>
+                    Target: <span className="font-medium text-slate-700">{user.target_company || "General Tech"}</span> • Onboarding: <span className="font-medium text-slate-700">{user.onboarding_state}</span>
                   </div>
                 </div>
               </div>

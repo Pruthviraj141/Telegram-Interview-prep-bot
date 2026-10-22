@@ -33,7 +33,7 @@ export interface InterviewSession {
   id: string;
   clerk_id: string;
   mode: "realistic" | "practice";
-  interviewer_style: "hr" | "technical" | "project_defence" | "mixed";
+  interviewer_style: "hr" | "technical" | "project_defence" | "mixed" | "dsa" | "system_design";
   duration_mode: "quick" | "standard" | "full";
   target_role: string;
   seniority: string;
