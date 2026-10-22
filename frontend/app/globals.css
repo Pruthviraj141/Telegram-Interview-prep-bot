@@ -2,108 +2,121 @@
 
 @layer base {
   :root {
-    --bg-workspace: #F8F9FA;
-    --text-graphite: #0F172A;
+    --bg-workspace: #F4F1EA;
+    --text-graphite: #20232C;
+    --text-secondary: #575B66;
+    --text-tertiary: #8C909C;
+    --surface-card: #FFFFFF;
+    --border-subtle: #E8E5DD;
+    --border-strong: #D5D0C5;
     --accent-indigo: #4F46E5;
-    --studio-midnight: #090D16;
-    --orb-cyan: #06B6D4;
-    --success-teal: #059669;
-    --surface-light: #FFFFFF;
-    --border-light: #E2E8F0;
-    --muted-graphite: #64748B;
+    --accent-indigo-hover: #4338CA;
+    --accent-sage: #168A72;
+    --studio-charcoal: #151517;
+    --studio-surface: #1E1E22;
+    --studio-surface-elevated: #26262B;
+    --studio-border: #2E2E35;
+    --studio-text: #F3F3F5;
+    --studio-muted: #8E929E;
   }
 }
 
 body {
   background-color: var(--bg-workspace);
   color: var(--text-graphite);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.012em;
+  line-height: 1.45;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
-/* Custom Scrollbars */
+/* Touch and safe-area utilities */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Minimalist Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.25);
+  background: rgba(32, 35, 44, 0.16);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.45);
+  background: rgba(32, 35, 44, 0.28);
 }
 
-/* Orb Glow Keyframes */
-@keyframes orb-pulse-idle {
+.studio-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+}
+.studio-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Apple-Grade Minimalist Orb Keyframes (Organic Motion, No Cheap Neon Glow) */
+@keyframes orb-breathe {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 45px rgba(101, 217, 242, 0.35), 0 0 90px rgba(89, 103, 242, 0.2);
+    opacity: 0.94;
   }
   50% {
-    transform: scale(1.04);
-    box-shadow: 0 0 65px rgba(101, 217, 242, 0.5), 0 0 120px rgba(89, 103, 242, 0.35);
+    transform: scale(1.025);
+    opacity: 1;
   }
 }
 
-@keyframes orb-listen {
-  0%, 100% {
-    transform: scale(1.02);
-    box-shadow: 0 0 55px rgba(22, 138, 114, 0.55), 0 0 110px rgba(101, 217, 242, 0.4);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow: 0 0 85px rgba(22, 138, 114, 0.8), 0 0 150px rgba(101, 217, 242, 0.6);
-  }
-}
-
-@keyframes orb-think {
+@keyframes orb-slow-rotation {
   0% {
-    transform: rotate(0deg) scale(0.98);
-    box-shadow: 0 0 40px rgba(89, 103, 242, 0.45), 0 0 80px rgba(101, 217, 242, 0.3);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.03);
-    box-shadow: 0 0 75px rgba(89, 103, 242, 0.75), 0 0 130px rgba(101, 217, 242, 0.5);
+    transform: rotate(0deg);
   }
   100% {
-    transform: rotate(360deg) scale(0.98);
-    box-shadow: 0 0 40px rgba(89, 103, 242, 0.45), 0 0 80px rgba(101, 217, 242, 0.3);
+    transform: rotate(360deg);
   }
 }
 
-@keyframes orb-speak {
+@keyframes orb-wave-reactive {
   0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 50px rgba(101, 217, 242, 0.5), 0 0 100px rgba(89, 103, 242, 0.35);
+    transform: scale(0.985);
   }
-  30% {
-    transform: scale(1.08);
-    box-shadow: 0 0 80px rgba(101, 217, 242, 0.75), 0 0 140px rgba(89, 103, 242, 0.55);
-  }
-  60% {
-    transform: scale(1.02);
-    box-shadow: 0 0 60px rgba(101, 217, 242, 0.6), 0 0 110px rgba(89, 103, 242, 0.4);
+  50% {
+    transform: scale(1.035);
   }
 }
 
 .orb-idle {
-  animation: orb-pulse-idle 4s ease-in-out infinite;
+  animation: orb-breathe 4s ease-in-out infinite;
 }
 
 .orb-listening {
-  animation: orb-listen 2s ease-in-out infinite;
+  animation: orb-wave-reactive 1.6s ease-in-out infinite;
 }
 
 .orb-thinking {
-  animation: orb-think 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: orb-breathe 2.2s ease-in-out infinite, orb-slow-rotation 16s linear infinite;
 }
 
 .orb-speaking {
-  animation: orb-speak 2.2s ease-in-out infinite;
+  animation: orb-wave-reactive 1.2s ease-in-out infinite;
 }
