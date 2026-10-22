@@ -55,7 +55,7 @@ export default function HomePage() {
           </p>
           <button
             onClick={loadData}
-            className="w-full py-2.5 bg-[#5967F2] text-white rounded-xl text-xs font-bold hover:bg-[#4855D6] transition"
+            className="w-full py-2.5 bg-[#20232C] text-white rounded-xl text-xs font-semibold hover:bg-black transition cursor-pointer"
           >
             Retry Connection
           </button>
