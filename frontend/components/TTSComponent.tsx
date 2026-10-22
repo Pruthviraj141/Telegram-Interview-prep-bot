@@ -9,7 +9,7 @@ interface TTSComponentProps {
 }
 
 export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
-  const [text, setText] = useState<string>("Welcome to your mock interview. Can you explain how database indexes work under the hood?");
+  const [text, setText] = useState<string>("Welcome to your mock interview round. Can you explain how database indexes work under the hood?");
   const [voice, setVoice] = useState<string>("en-US-EmmaNeural");
   const [loading, setLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -44,90 +44,95 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
         throw new Error(`Failed to generate audio (${response.status})`);
       }
 
-      // Process the MP3 file binary blob from FastAPI
       const audioBlob = await response.blob();
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
 
-      // Auto-play audio
       const audio = new Audio(url);
       audioRef.current = audio;
       await audio.play();
     } catch (err: any) {
       console.error("Error fetching TTS:", err);
-      setError(err.message || "Error occurred while generating the voice.");
+      setError(err.message || "Error occurred while synthesizing voice.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={cn("p-6 rounded-3xl bg-slate-900 border border-slate-800 text-slate-100 shadow-xl space-y-4", className)}>
-      <div className="flex items-center justify-between">
+    <div className={cn("p-6 sm:p-8 rounded-3xl bg-white border border-[#E8E5DD] text-[#20232C] shadow-xs space-y-4", className)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F4F1EA]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
             <Volume2 className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-100">
-              Free Testing TTS Engine (Edge API)
+            <h3 className="text-sm font-semibold text-[#20232C] tracking-tight">
+              Neural Voice Synthesis Tester
             </h3>
-            <p className="text-[11px] text-slate-400">Zero-Key Natural Neural Voice Testing</p>
+            <p className="text-[11px] text-slate-500">FastAPI streaming test with Edge TTS</p>
           </div>
         </div>
 
-        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 flex items-center gap-1">
-          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-          Active: {voice}
+        <span className="self-start sm:self-auto text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FAFAF8] text-slate-700 border border-[#E8E5DD]">
+          Active Engine: {voice}
         </span>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Interview Text to Synthesize
+        <label className="text-[11px] font-semibold text-slate-700">
+          Interview Script to Synthesize
         </label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type something to test your Next.js play button..."
+          placeholder="Type an interview prompt to test voice timbre..."
           rows={3}
-          className="w-full p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-hidden focus:border-indigo-500 resize-none leading-relaxed"
+          className="w-full p-3.5 rounded-2xl bg-[#FAFAF8] border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C] resize-none leading-relaxed"
         />
       </div>
 
       {error && (
-        <div className="p-3 bg-rose-950/50 border border-rose-800 text-rose-300 text-xs rounded-xl">
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl">
           {error}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] font-semibold text-slate-600">Voice:</label>
+          <select
+            value={voice}
+            onChange={(e) => setVoice(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+          >
+            <option value="en-US-EmmaNeural">Emma (US • Female Recruiter)</option>
+            <option value="en-US-ChristopherNeural">Christopher (US • Senior Systems Lead)</option>
+            <option value="en-US-JennyNeural">Jenny (US • Natural & Warm)</option>
+            <option value="en-US-GuyNeural">Guy (US • Conversational Tech)</option>
+            <option value="en-GB-SoniaNeural">Sonia (UK • British Professional)</option>
+            <option value="en-IN-NeerjaNeural">Neerja (India • Global Talent)</option>
+          </select>
+        </div>
+
         <button
           onClick={handleGenerateVoice}
           disabled={loading || !text.trim()}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition shadow-md cursor-pointer"
+          className="px-5 py-2.5 bg-[#20232C] hover:bg-black text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer min-h-[38px]"
         >
           {loading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Synthesizing...</span>
+              <span>Generating Audio...</span>
             </>
           ) : (
             <>
-              <Play className="w-3.5 h-3.5 fill-white" />
-              <span>Test Play Audio</span>
+              <Play className="w-3.5 h-3.5 fill-white text-white" />
+              <span>Synthesize & Play</span>
             </>
           )}
         </button>
-
-        {audioUrl && (
-          <audio controls src={audioUrl} className="h-8 max-w-[240px]">
-            Your browser does not support the audio element.
-          </audio>
-        )}
       </div>
     </div>
   );
 };
-
-export default TTSComponent;

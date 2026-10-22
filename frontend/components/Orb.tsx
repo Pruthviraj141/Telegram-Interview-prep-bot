@@ -22,120 +22,143 @@ interface OrbProps {
 
 export const Orb: React.FC<OrbProps> = ({ state, size = "lg", volume = 0, className }) => {
   const sizeMap = {
-    sm: "w-24 h-24",
-    md: "w-36 h-36",
-    lg: "w-52 h-52",
-    xl: "w-64 h-64",
+    sm: "w-16 h-16 sm:w-20 sm:h-20",
+    md: "w-24 h-24 sm:w-32 sm:h-32",
+    lg: "w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48",
+    xl: "w-32 h-32 sm:w-44 sm:h-44 md:w-56 md:h-56",
   };
 
-  // Dynamic scale from voice volume
-  const dynamicScale = state === "listening" && volume > 5
-    ? 1 + (volume / 100) * 0.25
+  // Subtle volume scaling (bounded and smooth, not jittery)
+  const volScaled = Math.min(Math.max(volume, 0), 100);
+  const dynamicScale = state === "listening" && volScaled > 3
+    ? 1 + (volScaled / 100) * 0.12
     : 1;
-
-  const getOrbGradient = () => {
-    switch (state) {
-      case "listening":
-        return "from-[#059669] via-[#10B981] to-[#34D399]";
-      case "transcribing":
-      case "thinking":
-        return "from-[#4F46E5] via-[#818CF8] to-[#06B6D4]";
-      case "speaking":
-        return "from-[#0284C7] via-[#38BDF8] to-[#818CF8]";
-      case "error":
-        return "from-[#DC2626] via-[#EF4444] to-[#F87171]";
-      case "paused":
-        return "from-[#475569] via-[#64748B] to-[#94A3B8]";
-      case "preflight":
-        return "from-[#3B82F6] via-[#6366F1] to-[#8B5CF6]";
-      case "idle":
-      default:
-        return "from-[#4338CA] via-[#6366F1] to-[#06B6D4]";
-    }
-  };
 
   const getStatusLabel = () => {
     switch (state) {
       case "listening":
         return "Listening to your answer...";
       case "transcribing":
-        return "Transcribing audio instantly...";
+        return "Transcribing response...";
       case "thinking":
-        return "Analyzing answer & formulating response...";
+        return "Evaluating response & rubric...";
       case "speaking":
         return "Interviewer speaking...";
       case "paused":
-        return "Interview paused";
+        return "Session paused";
       case "preflight":
-        return "Connecting studio...";
+        return "Connecting neural audio...";
       case "error":
-        return "Microphone or connection issue";
+        return "Microphone or audio alert";
       case "idle":
       default:
-        return "Ready — Click Speak when ready";
+        return "Ready — Click Speak when prepared";
+    }
+  };
+
+  // Apple-grade chromatic core and rim styling
+  const getCoreStyle = () => {
+    switch (state) {
+      case "listening":
+        return "from-[#1C2522] via-[#16352B] to-[#1B4D3E] border-emerald-500/40 shadow-[0_0_40px_rgba(27,107,80,0.18)]";
+      case "transcribing":
+      case "thinking":
+        return "from-[#201F2B] via-[#28273D] to-[#312E52] border-indigo-400/35 shadow-[0_0_40px_rgba(79,70,229,0.16)]";
+      case "speaking":
+        return "from-[#1F242C] via-[#252E3B] to-[#2E3C4F] border-slate-300/40 shadow-[0_0_35px_rgba(148,163,184,0.14)]";
+      case "error":
+        return "from-[#2B1F20] via-[#3D2526] to-[#4F2C2D] border-rose-500/40 shadow-[0_0_35px_rgba(244,63,94,0.16)]";
+      case "paused":
+        return "from-[#1A1A1D] via-[#222226] to-[#2A2A30] border-slate-600/30";
+      case "preflight":
+        return "from-[#1F222B] via-[#262C3A] to-[#2F374A] border-indigo-500/30";
+      case "idle":
+      default:
+        return "from-[#1A1A1E] via-[#222227] to-[#2C2D35] border-white/15 shadow-[0_0_30px_rgba(255,255,255,0.04)]";
+    }
+  };
+
+  const getAnimationClass = () => {
+    switch (state) {
+      case "listening":
+        return "orb-listening";
+      case "thinking":
+      case "transcribing":
+        return "orb-thinking";
+      case "speaking":
+        return "orb-speaking";
+      case "idle":
+      default:
+        return "orb-idle";
     }
   };
 
   return (
     <div className={cn("flex flex-col items-center justify-center select-none", className)}>
       <div className="relative flex items-center justify-center">
-        {/* Dynamic Multi-Layer Ambient Halo */}
+        {/* Subtle Ambient Refraction Ring */}
         <div
-          style={{ transform: `scale(${dynamicScale * 1.15})` }}
+          style={{ transform: `scale(${dynamicScale * 1.08})` }}
           className={cn(
-            "absolute rounded-full blur-3xl transition-all duration-300 pointer-events-none opacity-40",
-            sizeMap[size],
-            state === "listening" && "bg-emerald-500",
-            (state === "thinking" || state === "transcribing") && "bg-indigo-500",
-            state === "speaking" && "bg-cyan-400",
-            state === "idle" && "bg-indigo-600/30"
-          )}
-        />
-
-        {/* Outer Ring Pulse */}
-        <div
-          style={{ transform: `scale(${dynamicScale * 1.06})` }}
-          className={cn(
-            "absolute rounded-full border border-white/20 blur-[1px] transition-transform duration-150 pointer-events-none",
+            "absolute rounded-full border border-white/10 blur-[2px] transition-transform duration-200 pointer-events-none",
             sizeMap[size]
           )}
         />
 
-        {/* Core Glowing Orb */}
+        {/* Primary Tactile Orb Sphere */}
         <div
           style={{ transform: `scale(${dynamicScale})` }}
           className={cn(
-            "rounded-full bg-gradient-to-tr shadow-2xl relative transition-transform duration-150 overflow-hidden cursor-default",
+            "relative rounded-full bg-gradient-to-br border flex items-center justify-center transition-transform duration-150 overflow-hidden",
             sizeMap[size],
-            getOrbGradient(),
-            state === "idle" && "orb-idle",
-            state === "listening" && "orb-listening",
-            (state === "thinking" || state === "transcribing") && "orb-think",
-            state === "speaking" && "orb-speak"
+            getCoreStyle(),
+            getAnimationClass()
           )}
         >
-          {/* Internal Radial Light Specular Highlights */}
-          <div className="absolute -top-1/4 -left-1/4 w-3/4 h-3/4 rounded-full bg-white/30 blur-md pointer-events-none" />
-          <div className="absolute -bottom-1/4 -right-1/4 w-3/4 h-3/4 rounded-full bg-cyan-300/25 blur-lg pointer-events-none" />
-          <div className="absolute inset-0 bg-radial from-transparent via-black/10 to-black/40 pointer-events-none" />
+          {/* Internal Specular Glass Highlight */}
+          <div className="absolute top-2 inset-x-4 h-1/3 bg-gradient-to-b from-white/12 to-transparent rounded-t-full pointer-events-none" />
+
+          {/* Audio-Reactive Wave Equalizer (Minimal 5-bar display when active) */}
+          {(state === "listening" || state === "speaking") && (
+            <div className="flex items-center gap-1.5 z-10">
+              {[0.5, 0.9, 1.2, 0.8, 0.6].map((multiplier, idx) => {
+                const barHeight = Math.max(6, Math.min(32, (volScaled * multiplier) / 3));
+                return (
+                  <div
+                    key={idx}
+                    style={{ height: `${barHeight}px` }}
+                    className={cn(
+                      "w-1 rounded-full transition-all duration-75",
+                      state === "listening" ? "bg-emerald-400" : "bg-slate-200"
+                    )}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Thinking / Transcribing Spinner Accent */}
+          {(state === "thinking" || state === "transcribing") && (
+            <div className="w-8 h-8 rounded-full border-2 border-indigo-400/30 border-t-indigo-400 animate-spin z-10" />
+          )}
+
+          {/* Idle Calm Specular Center Dot */}
+          {state === "idle" && (
+            <div className="w-2.5 h-2.5 rounded-full bg-white/40 shadow-xs" />
+          )}
         </div>
       </div>
 
-      {/* Real-time Status Badge */}
-      <div className="mt-7 flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/80 border border-slate-800/80 backdrop-blur-md shadow-xs">
-        <span
-          className={cn(
-            "w-2 h-2 rounded-full",
-            state === "listening" && "bg-emerald-400 animate-ping",
-            (state === "thinking" || state === "transcribing") && "bg-indigo-400 animate-pulse",
-            state === "speaking" && "bg-cyan-400 animate-pulse",
-            state === "idle" && "bg-slate-400",
-            state === "error" && "bg-rose-500"
-          )}
-        />
-        <span className="text-[11px] uppercase tracking-widest font-bold text-slate-300">
+      {/* Crisp Status Text */}
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <span className="text-xs font-medium text-[#8E929E] tracking-tight">
           {getStatusLabel()}
         </span>
+        {state === "listening" && (
+          <span className="text-[10px] text-emerald-400 font-medium">
+            Audio stream active • Live transcription
+          </span>
+        )}
       </div>
     </div>
   );
