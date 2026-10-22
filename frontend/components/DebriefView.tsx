@@ -15,7 +15,8 @@ import {
   MessageSquare,
   ShieldCheck,
   Send,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from "lucide-react";
 
 interface DebriefViewProps {
@@ -39,10 +40,10 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
     setIsDisputing(true);
     setDisputeSuccessMsg(null);
     try {
-      const res = await api.disputeTurnFeedback(turnId, {
+      await api.disputeTurnFeedback(turnId, {
         clarification: disputeClarification,
       });
-      setDisputeSuccessMsg("Clarification evaluated! Rubric updated below.");
+      setDisputeSuccessMsg("Clarification evaluated. Updated feedback reflected.");
       setDisputeTurnId(null);
       setDisputeClarification("");
     } catch {
@@ -53,119 +54,167 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-      {/* Debrief Header */}
-      <div className="bg-white border border-[#E4E0D6] rounded-3xl p-8 shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-4xl mx-auto px-3.5 sm:px-6 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12 font-sans">
+      {/* Back to Dashboard Navigation */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#20232C] transition min-h-[40px] px-2"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Dashboard</span>
+        </Link>
+
+        <Link
+          href="/interview"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#20232C] text-[#F4F1EA] text-xs font-semibold rounded-xl hover:bg-black transition shadow-xs min-h-[40px]"
+        >
+          <span>Start New Round</span>
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+
+      {/* Debrief Header: Editorial Apple Card */}
+      <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-4 sm:space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5967F2]">
-              {debrief?.status_label || "Interview Debrief"}
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#4F46E5]">
+              {debrief?.status_label || "Completed Interview Debrief"}
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#20232C]">
-              {session.target_role} Simulation Performance
+            <h1 className="text-xl sm:text-3xl font-semibold tracking-tight text-[#20232C]">
+              {session.target_role} Assessment
             </h1>
+            <p className="text-xs text-slate-500">
+              Simulation Mode: <span className="capitalize">{session.mode}</span> • Interviewer Focus: <span className="capitalize">{session.interviewer_style}</span>
+            </p>
           </div>
 
           {debrief?.overall_score ? (
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-md">
-              <Award className="w-7 h-7 text-[#65D9F2]" />
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#20232C] text-white shadow-sm shrink-0">
+              <Award className="w-6 h-6 text-[#F4F1EA]" />
               <div>
-                <div className="text-2xl font-black">{debrief.overall_score} <span className="text-xs text-slate-400 font-normal">/ 5.0</span></div>
-                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Calibrated Score</div>
+                <div className="text-2xl font-bold tracking-tight">
+                  {debrief.overall_score} <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
+                </div>
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
+                  Calibrated Score
+                </div>
               </div>
             </div>
           ) : (
             <div className="px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
-              Insufficient Evidence for Numeric Score
+              Insufficient Turns for Numeric Score
             </div>
           )}
         </div>
 
-        <p className="text-sm text-slate-600 leading-relaxed pt-2 border-t border-slate-100">
-          {debrief?.summary}
-        </p>
+        {debrief?.summary && (
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-3 border-t border-[#F4F1EA]">
+            {debrief.summary}
+          </p>
+        )}
       </div>
 
       {/* Skill Breakdown Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {Object.entries(skills).map(([skillName, score]: [string, any]) => (
-          <div key={skillName} className="bg-white border border-[#E4E0D6] rounded-2xl p-5 shadow-xs">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">
-              {skillName}
-            </span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-extrabold text-[#20232C]">
-                {score ? `${score}` : "—"}
-              </span>
-              <span className="text-xs text-slate-400">/ 5.0</span>
-            </div>
+      {Object.keys(skills).length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 px-1">
+            Evaluated Dimension Breakdown
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {Object.entries(skills).map(([skillName, score]: [string, any]) => (
+              <div key={skillName} className="bg-white border border-[#E8E5DD] rounded-2xl p-5 shadow-xs space-y-2">
+                <span className="text-[11px] font-semibold text-slate-600 block">
+                  {skillName}
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-[#20232C]">
+                    {score ? `${score}` : "—"}
+                  </span>
+                  <span className="text-xs text-slate-400">/ 5.0</span>
+                </div>
+                <div className="w-full bg-[#F4F1EA] h-1.5 rounded-full overflow-hidden">
+                  <div
+                    style={{ width: `${(Number(score || 0) / 5) * 100}%` }}
+                    className="bg-[#20232C] h-full rounded-full"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Strengths vs Gaps */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-6 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
-            <CheckCircle2 className="w-4 h-4 text-[#168A72]" />
-            <span>Demonstrated Knowledge</span>
+      {/* Strengths vs Missing Points */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white border border-[#E8E5DD] rounded-3xl p-6 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-emerald-800 font-semibold text-xs tracking-tight">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Demonstrated Strengths & Knowledge</span>
           </div>
-          <ul className="text-xs text-slate-600 space-y-2 list-disc list-inside">
+          <ul className="text-xs text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
             {debrief?.demonstrated_strengths?.map((str: string, i: number) => (
               <li key={i}>{str}</li>
             ))}
           </ul>
         </div>
 
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-6 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+        <div className="bg-white border border-[#E8E5DD] rounded-3xl p-6 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-amber-800 font-semibold text-xs tracking-tight">
             <AlertCircle className="w-4 h-4 text-amber-600" />
-            <span>Targeted Growth Areas</span>
+            <span>Key Gaps & Improvement Areas</span>
           </div>
-          <ul className="text-xs text-slate-600 space-y-2 list-disc list-inside">
-            {debrief?.key_gaps?.map((gap: string, i: number) => (
+          <ul className="text-xs text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
+            {debrief?.primary_gaps?.map((gap: string, i: number) => (
               <li key={i}>{gap}</li>
             ))}
           </ul>
         </div>
       </div>
 
-      {disputeSuccessMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#168A72]" />
-          <span>{disputeSuccessMsg}</span>
+      {/* Turn-by-Turn Expandable Details */}
+      <div className="bg-white border border-[#E8E5DD] rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+        <div className="pb-3 border-b border-[#F4F1EA]">
+          <h2 className="text-sm font-semibold text-[#20232C] tracking-tight">Turn-by-Turn Transcripts & Rubrics</h2>
+          <p className="text-[11px] text-slate-500">Inspect evidence quotes, model answers, and request clarification if scored unfairly</p>
         </div>
-      )}
 
-      {/* Turn-by-Turn Evidence Timeline */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-[#20232C]">Turn Timeline & Evidence Excerpts</h2>
+        {disputeSuccessMsg && (
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{disputeSuccessMsg}</span>
+          </div>
+        )}
 
-        <div className="space-y-3">
-          {turnsSummary.map((turn: any, i: number) => {
-            const isExpanded = activeTurnIdx === i;
+        <div className="divide-y divide-[#F4F1EA]">
+          {turns.map((turn, idx) => {
+            const isExpanded = activeTurnIdx === idx;
+            const evalData = turn.evaluation || {};
+            const isDisputingThis = disputeTurnId === turn.id;
+
             return (
-              <div
-                key={i}
-                className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden shadow-xs transition"
-              >
+              <div key={turn.id} className="py-4 space-y-3">
                 <button
-                  onClick={() => setActiveTurnIdx(isExpanded ? null : i)}
-                  className="w-full p-5 text-left flex items-center justify-between hover:bg-slate-50/50 transition"
+                  type="button"
+                  onClick={() => setActiveTurnIdx(isExpanded ? null : idx)}
+                  className="w-full flex items-center justify-between text-left gap-4 hover:opacity-80 transition cursor-pointer"
                 >
                   <div className="space-y-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#5967F2]">
-                      Turn {turn.turn_index} • {turn.category}
-                    </span>
-                    <div className="text-sm font-semibold text-[#20232C]">
-                      {turn.question}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-slate-500">Question {turn.turn_index + 1}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#F4F1EA] text-[10px] font-medium text-slate-700">
+                        {turn.category}
+                      </span>
+                    </div>
+                    <div className="font-semibold text-xs sm:text-sm text-[#20232C] leading-snug">
+                      {turn.question_text}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    {turn.score && (
-                      <span className="px-2.5 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-700">
-                        {turn.score} / 5.0
+                    {evalData.overall_score && (
+                      <span className="px-2.5 py-1 rounded-xl bg-[#FAFAF8] border border-[#E8E5DD] text-xs font-bold text-[#20232C]">
+                        {evalData.overall_score} / 5.0
                       </span>
                     )}
                     {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -173,94 +222,92 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
                 </button>
 
                 {isExpanded && (
-                  <div className="p-5 pt-0 border-t border-slate-100 space-y-4 text-xs">
-                    {/* Candidate transcript evidence excerpt */}
-                    {turn.evidence && (
-                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
-                        <span className="font-bold text-slate-700">Your Answer Excerpt:</span>
-                        <p className="text-slate-600 italic">“{turn.evidence}”</p>
-                      </div>
-                    )}
-
-                    {/* Improved answer */}
-                    {turn.improved_answer && (
-                      <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-1.5">
-                        <span className="font-bold text-[#5967F2]">Improved Answer Example:</span>
-                        <p className="text-slate-700 leading-relaxed">{turn.improved_answer}</p>
-                        <p className="text-[11px] text-slate-500 italic mt-1">Why it works: {turn.why_its_stronger}</p>
-                      </div>
-                    )}
-
-                    {/* Dispute Feedback Section */}
-                    <div className="pt-2 flex items-center justify-between">
-                      <button
-                        onClick={() => setDisputeTurnId(disputeTurnId === turns[i]?.id ? null : turns[i]?.id)}
-                        className="text-xs text-slate-500 hover:text-[#5967F2] font-semibold flex items-center gap-1.5"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Dispute or Clarify Feedback</span>
-                      </button>
+                  <div className="pt-2 pl-2 space-y-4 text-xs text-slate-600 animate-in fade-in duration-100">
+                    {/* Candidate Answer */}
+                    <div className="p-4 bg-[#FAFAF8] border border-[#E8E5DD] rounded-2xl space-y-1.5">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Candidate Response:</span>
+                      <p className="italic text-slate-800 leading-relaxed">
+                        &quot;{turn.corrected_transcript || turn.original_transcript || turn.typed_answer || "No response recorded"}&quot;
+                      </p>
                     </div>
 
-                    {disputeTurnId === turns[i]?.id && (
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                        <p className="text-[11px] text-slate-500">
-                          Provide clarification on what was missed or correct misheard terminology.
-                          The AI coach will reassess against the rubric while preserving your history.
-                        </p>
-                        <textarea
-                          rows={3}
-                          placeholder="Explain what was intended or provide omitted details..."
-                          value={disputeClarification}
-                          onChange={(e) => setDisputeClarification(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#5967F2]"
-                        />
-                        <button
-                          onClick={() => handleDisputeSubmit(turns[i].id)}
-                          disabled={isDisputing || !disputeClarification.trim()}
-                          className="px-4 py-2 bg-[#5967F2] text-white rounded-lg font-bold text-xs hover:bg-[#4855D6] transition flex items-center gap-1.5 disabled:opacity-50"
-                        >
-                          {isDisputing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                          Reassess Response
-                        </button>
+                    {/* Evidence Quote */}
+                    {evalData.evidence_quote && (
+                      <div className="p-3 bg-white border border-[#E8E5DD] rounded-xl text-[11px] space-y-1">
+                        <span className="font-semibold text-slate-700">Extracted Evidence:</span>
+                        <p className="text-slate-600 leading-relaxed">&quot;{evalData.evidence_quote}&quot;</p>
                       </div>
                     )}
+
+                    {/* Model Answer Recommendation */}
+                    {evalData.stronger_answer && (
+                      <div className="p-4 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider">High-Scoring Exemplar:</span>
+                        <p className="text-emerald-950 leading-relaxed">{evalData.stronger_answer}</p>
+                      </div>
+                    )}
+
+                    {/* Dispute Clarification Form */}
+                    <div className="pt-2">
+                      {!isDisputingThis ? (
+                        <button
+                          type="button"
+                          onClick={() => setDisputeTurnId(turn.id)}
+                          className="text-[11px] font-semibold text-[#4F46E5] hover:text-[#4338CA] transition inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>Clarify or Contest Feedback</span>
+                        </button>
+                      ) : (
+                        <div className="p-4 bg-[#FAFAF8] border border-[#E8E5DD] rounded-2xl space-y-2">
+                          <label className="block text-[11px] font-semibold text-slate-700">
+                            Explain what you intended to convey or why you feel the rubric missed your evidence:
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={disputeClarification}
+                            onChange={(e) => setDisputeClarification(e.target.value)}
+                            placeholder="e.g. In my answer, I mentioned time complexity O(N) when discussing the hash table..."
+                            className="w-full p-3 bg-white border border-slate-300 rounded-xl text-base sm:text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                          />
+                          <div className="flex gap-2 justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDisputeTurnId(null);
+                                setDisputeClarification("");
+                              }}
+                              className="px-3.5 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs hover:bg-slate-100 min-h-[40px]"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDisputeSubmit(turn.id)}
+                              disabled={isDisputing || !disputeClarification.trim()}
+                              className="px-4 py-2 rounded-xl bg-[#20232C] text-[#F4F1EA] text-xs font-semibold hover:bg-black transition flex items-center gap-1.5 min-h-[40px]"
+                            >
+                              {isDisputing ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Reassessing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Submit for Reassessment</span>
+                                  <Send className="w-3.5 h-3.5" />
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Next Actions & Spaced Revision */}
-      <div className="p-6 bg-slate-900 text-white rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h4 className="text-base font-bold">Ready to practise targeted weak areas?</h4>
-          <p className="text-xs text-slate-400">
-            Revisit missed concepts with varied follow-up questions to verify independent mastery.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <Link
-            href="/"
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold text-xs text-slate-200 transition"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/tracker"
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold text-xs text-slate-200 transition"
-          >
-            Job Tracker
-          </Link>
-          <Link
-            href="/interview"
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition flex items-center gap-2 shadow-md"
-          >
-            <span>Start New Interview</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
       </div>
     </div>
