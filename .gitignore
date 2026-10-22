@@ -1,0 +1,50 @@
+# Python / Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Environment / Secrets / Keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+groq_key*
+
+# SQLite Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Test & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+build/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# Resumes and binary uploads
+*.pdf
+*.docx
