@@ -26,7 +26,9 @@ import {
   Keyboard,
   PlayCircle,
   HelpCircle,
-  X
+  X,
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,9 +47,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [audioVolume, setAudioVolume] = useState<number>(0);
 
-  // Voice Settings (Neural Voices)
+  // Voice Settings (Neural Voices via Edge TTS)
   const [neuralVoices, setNeuralVoices] = useState<NeuralVoice[]>(FALLBACK_NEURAL_VOICES);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string>("en-US-ChristopherNeural");
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>("en-US-EmmaNeural");
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1.0);
   const [showVoiceSettings, setShowVoiceSettings] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -61,10 +63,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   const [useTypedMode, setUseTypedMode] = useState<boolean>(false);
   const [typedAnswer, setTypedAnswer] = useState<string>("");
 
-  // Practice Mode Options
-  const [autoAdvance, setAutoAdvance] = useState<boolean>(true);
-  const [showPracticeFeedback, setShowPracticeFeedback] = useState<boolean>(false);
+  // Practice Mode Options & Instant Feedback
   const [turnEvaluation, setTurnEvaluation] = useState<any>(null);
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
 
   // Modals & Errors
   const [showEndModal, setShowEndModal] = useState<boolean>(false);
@@ -73,15 +74,23 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   const recorderRef = useRef<AudioRecorder | null>(null);
   const timerRef = useRef<any>(null);
 
-  // Load available neural voices
+  // Load available neural voices from backend
   useEffect(() => {
-    const voices = speechSynth.getNeuralVoices();
-    if (voices && voices.length > 0) {
-      setNeuralVoices(voices);
+    async function loadVoices() {
+      try {
+        const voices = await api.getTTSVoices();
+        if (voices && voices.length > 0) {
+          setNeuralVoices(voices);
+        }
+      } catch {
+        const local = speechSynth.getNeuralVoices();
+        if (local && local.length > 0) setNeuralVoices(local);
+      }
     }
+    loadVoices();
   }, []);
 
-  // Speak question automatically when a new turn starts
+  // Speak question automatically when a new turn arrives
   useEffect(() => {
     if (currentTurn && currentTurn.question_text && !isMuted) {
       speakText(currentTurn.question_text);
@@ -122,117 +131,116 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       setIsRecording(true);
       setOrbState("listening");
       setRecordingDuration(0);
-
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } catch (err: any) {
-      setErrorMsg(err.message || "Microphone access blocked. You can type your answer below.");
+      setErrorMsg(err.message || "Could not access microphone. Please check browser permissions.");
       setOrbState("error");
     }
   };
 
-  // 1-Click Done Speaking -> DIRECT SUBMIT TO AI (No confirmation modal/rechecking needed)
+  // Direct Submission on Stop Speaking
   const stopRecordingAndSubmit = async () => {
-    if (!recorderRef.current) return;
+    if (!recorderRef.current || !isRecording) return;
+    if (timerRef.current) clearInterval(timerRef.current);
     setIsRecording(false);
-    setAudioVolume(0);
-    clearInterval(timerRef.current);
     setOrbState("transcribing");
+    setIsEvaluating(true);
 
     try {
       const audioBlob = await recorderRef.current.stop();
+      setOrbState("transcribing");
 
-      // Transient in-memory transcription via Whisper (never persisted)
-      const res = await api.transcribeAudio(audioBlob);
-      const recognizedText = res.transcript?.trim();
+      // 1. Transcribe audio securely (Whisper on Groq)
+      const transRes = await api.transcribeAudio(audioBlob);
+      const text = transRes.transcript || "";
+      setLiveTranscriptPreview(text);
 
-      if (!recognizedText || recognizedText.length < 2) {
-        setErrorMsg("Didn't catch any audio. Please click 'Speak Answer' again.");
-        setOrbState("idle");
-        return;
-      }
+      setOrbState("thinking");
 
-      setLiveTranscriptPreview(recognizedText);
-      // Immediately submit answer directly to AI!
-      await submitAnswerDirectly(recognizedText, true);
+      // 2. Submit turn answer with transcript for calibrated evaluation
+      const res = await api.submitTurnAnswer(currentTurn.id, {
+        original_transcript: text,
+        corrected_transcript: text,
+        is_voice: true,
+        scratchpad_text: scratchpadOpen ? scratchpadText : undefined,
+      });
+
+      handleTurnResult(res);
     } catch (err: any) {
-      setErrorMsg(err.message || "Voice processing failed. Please retry or type answer.");
-      setOrbState("error");
+      setErrorMsg(err.message || "Failed to process turn answer. You can retry speaking or switch to typing.");
+      setOrbState("idle");
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
-  // Submit Answer Directly to AI Engine
-  const submitAnswerDirectly = async (answerText: string, fromVoice: boolean = true) => {
-    handleStopSpeaking();
-    setOrbState("thinking");
+  // Submit typed response fallback
+  const handleTypedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!typedAnswer.trim()) return;
     setErrorMsg(null);
+    setOrbState("thinking");
+    setIsEvaluating(true);
 
     try {
       const res = await api.submitTurnAnswer(currentTurn.id, {
-        original_transcript: fromVoice ? answerText : undefined,
-        corrected_transcript: fromVoice ? answerText : undefined,
-        typed_answer: !fromVoice ? answerText : undefined,
-        is_voice: fromVoice,
-        scratchpad_text: scratchpadText || undefined,
+        typed_answer: typedAnswer.trim(),
+        is_voice: false,
+        scratchpad_text: scratchpadOpen ? scratchpadText : undefined,
       });
-
-      const evalData = res.evaluated_turn.evaluation;
-      setTurnEvaluation(evalData);
-
-      // Check if session completed
-      if (res.is_session_completed) {
-        router.push(`/interview/${session.id}/debrief`);
-        return;
-      }
-
-      // Practice Mode handling
-      if (session.mode === "practice" && !autoAdvance) {
-        setShowPracticeFeedback(true);
-        setOrbState("idle");
-        if (evalData?.spoken_coaching_summary && !isMuted) {
-          speakText(evalData.spoken_coaching_summary);
-        }
-      } else {
-        // Continuous Direct Interview: Next turn begins immediately
-        if (res.next_turn) {
-          setCurrentTurn(res.next_turn);
-          setLiveTranscriptPreview("");
-          setTypedAnswer("");
-        }
-      }
+      setTypedAnswer("");
+      handleTurnResult(res);
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to analyze answer with AI.");
-      setOrbState("error");
+      setErrorMsg(err.message || "Failed to submit answer. Please retry.");
+      setOrbState("idle");
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
-  // Manual next turn button for practice mode feedback view
-  const handleContinueNextTurn = async () => {
-    setShowPracticeFeedback(false);
-    setLiveTranscriptPreview("");
-    setTypedAnswer("");
-    handleStopSpeaking();
-
-    const updated = await api.getInterviewSession(session.id);
-    const turns = updated.turns || [];
-    const last = turns[turns.length - 1];
-
-    if (updated.session.status === "completed" || turns.length >= (session.blueprint?.target_questions || 5)) {
+  // Handle Turn Result
+  const handleTurnResult = (res: any) => {
+    if (res.is_session_completed) {
+      // Session fully finished -> Redirect to debrief
       router.push(`/interview/${session.id}/debrief`);
-    } else if (last && last.id !== currentTurn.id) {
-      setCurrentTurn(last);
+      return;
+    }
+
+    if (session.mode === "practice" && res.evaluated_turn?.evaluation) {
+      // Show coaching turn feedback drawer
+      setTurnEvaluation(res.evaluated_turn.evaluation);
+      setOrbState("idle");
+      // Cache next turn to advance after reviewing
+      if (res.next_turn) {
+        (window as any).__cachedNextTurn = res.next_turn;
+      }
+    } else if (res.next_turn) {
+      // Realistic simulation: advance seamlessly
+      setCurrentTurn(res.next_turn);
+      setLiveTranscriptPreview("");
+      setOrbState("idle");
     }
   };
 
-  const handleConfirmEndEarly = async () => {
-    handleStopSpeaking();
-    if (recorderRef.current) recorderRef.current.cancel();
+  const handleAdvanceToNextTurn = () => {
+    const next = (window as any).__cachedNextTurn;
+    if (next) {
+      setCurrentTurn(next);
+      setTurnEvaluation(null);
+      (window as any).__cachedNextTurn = null;
+    } else {
+      router.push(`/interview/${session.id}/debrief`);
+    }
+  };
+
+  const handleEndSessionEarly = async () => {
     try {
       await api.endInterviewSession(session.id);
       router.push(`/interview/${session.id}/debrief`);
     } catch {
-      router.push(`/interview/${session.id}/debrief`);
+      router.push("/");
     }
   };
 
@@ -243,71 +251,64 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   };
 
   const currentVoice = neuralVoices.find((v) => v.id === selectedVoiceId) || neuralVoices[0];
+  const targetQuestions = session.blueprint?.target_questions || 5;
 
   return (
     <div
       className={cn(
-        "min-h-screen bg-[#090D16] text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white transition-all relative overflow-hidden font-sans",
+        "min-h-screen bg-[#141416] text-[#F3F3F5] flex flex-col justify-between selection:bg-[#4F46E5] selection:text-white transition-all relative overflow-hidden font-sans",
         isFullscreen && "fixed inset-0 z-50 overflow-y-auto"
       )}
     >
-      {/* Background Ambient Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
-
-      {/* Top Studio Control Bar */}
-      <header className="relative z-20 border-b border-slate-800/80 bg-[#0B0F1C]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      {/* Top Studio Control Bar (Calm Apple-grade charcoal & hairline border) */}
+      <header className="relative z-20 border-b border-[#2A2A30] bg-[#141416]/95 backdrop-blur-md px-3 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
         {/* Left: Exit & Context Breadcrumbs */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => setShowEndModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-slate-300 text-xs font-medium transition cursor-pointer shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Exit Session</span>
+            <span className="hidden sm:inline">Exit</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-800" />
+          <div className="h-4 w-px bg-[#2E2E35] shrink-0" />
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-200">
-                {session.blueprint?.target_role || session.target_role || "Interview"}
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-                {session.mode === "realistic" ? "Realistic Simulation" : "Practice Mode"}
-              </span>
-            </div>
-            <span className="text-[11px] text-slate-500">
-              Question {currentTurn.turn_index + 1} of {session.blueprint?.target_questions || 5} • {currentTurn.category}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="text-xs font-semibold text-white tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">
+              {session.blueprint?.target_role || session.target_role || "Interview"}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-300 border border-white/10 shrink-0">
+              Q{currentTurn.turn_index + 1}/{targetQuestions}
             </span>
           </div>
         </div>
 
-        {/* Right: Voice Settings & Controls */}
-        <div className="flex items-center gap-2.5">
+        {/* Right: Neural Voice Settings & Studio Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Voice Selector Pill */}
           <div className="relative">
             <button
               onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/70 text-xs font-medium text-slate-300 transition"
-              title="Change interviewer neural voice"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-xs font-medium text-slate-300 transition cursor-pointer"
+              title="Change neural voice"
             >
-              <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+              <Volume2 className="w-3.5 h-3.5 text-slate-300" />
               <span className="hidden md:inline">{currentVoice?.name || "Neural Voice"}</span>
-              <Settings2 className="w-3.5 h-3.5 text-slate-400 ml-1" />
+              <Settings2 className="w-3 h-3 text-slate-500 ml-0.5" />
             </button>
 
             {/* Voice Dropdown Drawer */}
             {showVoiceSettings && (
-              <div className="absolute right-0 mt-2 w-72 p-3 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Interviewer Voice</span>
+              <div className="absolute right-0 mt-2 w-72 p-3 bg-[#1E1E22] border border-[#2E2E35] rounded-2xl shadow-2xl z-50 space-y-3 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2E2E35]">
+                  <span className="text-xs font-semibold text-white tracking-tight">Neural Recruiter Voice</span>
                   <button onClick={() => setShowVoiceSettings(false)} className="text-slate-400 hover:text-white">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                <div className="space-y-1 max-h-56 overflow-y-auto studio-scroll">
                   {neuralVoices.map((v) => (
                     <button
                       key={v.id}
@@ -317,23 +318,23 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                         speechSynth.speak(`Hello, I am ${v.name}. Let's continue your interview.`, { neuralVoiceId: v.id, speed: voiceSpeed });
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between",
+                        "w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between cursor-pointer",
                         selectedVoiceId === v.id
-                          ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/40"
-                          : "hover:bg-slate-800/80 text-slate-300"
+                          ? "bg-white/[0.08] text-white border border-white/20 font-medium"
+                          : "hover:bg-white/[0.04] text-slate-400 hover:text-slate-200"
                       )}
                     >
                       <div>
-                        <div className="font-semibold">{v.name}</div>
+                        <div className="font-medium text-white">{v.name}</div>
                         <div className="text-[10px] text-slate-400">{v.style}</div>
                       </div>
-                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{v.tag}</span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-black/40 text-slate-400">{v.tag}</span>
                     </button>
                   ))}
                 </div>
 
                 {/* Speed Slider */}
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-[#2E2E35]">
                   <div className="flex justify-between text-[11px] text-slate-400 mb-1">
                     <span>Pacing</span>
                     <span>{voiceSpeed}x</span>
@@ -345,284 +346,280 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     step="0.05"
                     value={voiceSpeed}
                     onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
-                    className="w-full accent-indigo-500 cursor-pointer"
+                    className="w-full accent-white cursor-pointer"
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Mute Button */}
+          {/* Mute Toggle */}
           <button
             onClick={() => {
               if (!isMuted) handleStopSpeaking();
               setIsMuted(!isMuted);
             }}
             className={cn(
-              "p-2 rounded-xl border text-xs font-medium transition",
+              "w-8 h-8 rounded-xl border text-xs flex items-center justify-center transition cursor-pointer",
               isMuted
-                ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
-                : "bg-slate-800/70 border-slate-700/60 text-slate-300 hover:bg-slate-700/80"
+                ? "bg-rose-500/15 border-rose-500/30 text-rose-300"
+                : "bg-[#1E1E22] border-[#2E2E35] text-slate-300 hover:bg-[#26262B]"
             )}
             title={isMuted ? "Unmute AI Voice" : "Mute AI Voice"}
           >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
           {/* Technical Scratchpad */}
           <button
             onClick={() => setScratchpadOpen(!scratchpadOpen)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition",
+              "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl border text-xs font-medium transition cursor-pointer",
               scratchpadOpen
-                ? "bg-indigo-600 text-white border-indigo-500 shadow-xs"
-                : "bg-slate-800/70 border-slate-700/60 text-slate-300 hover:bg-slate-700/80"
+                ? "bg-white text-black border-white shadow-xs"
+                : "bg-[#1E1E22] border-[#2E2E35] text-slate-300 hover:bg-[#26262B]"
             )}
-            title="Technical Notes & Code Scratchpad"
+            title="Technical Notes & Architecture Scratchpad"
           >
             <Code2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Notes</span>
+            <span className="hidden sm:inline">Scratchpad</span>
           </button>
 
-          {/* Fullscreen */}
+          {/* Fullscreen Toggle (desktop only) */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700/60 text-slate-300 transition"
-            title="Toggle Fullscreen Studio"
+            className="hidden sm:flex w-8 h-8 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-slate-300 items-center justify-center transition cursor-pointer"
+            title="Toggle Fullscreen"
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </header>
 
-      {/* Center Stage: Interviewer Orb & Question */}
-      <main className="relative z-10 flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col items-center justify-between gap-6">
+      {/* Main Studio Body (Apple layout: responsive, comfortable margins) */}
+      <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-between gap-4 sm:gap-6 pb-safe">
         {/* Error Alert */}
         {errorMsg && (
-          <div className="w-full p-4 rounded-2xl bg-rose-950/60 border border-rose-800/80 text-rose-200 text-xs flex items-center justify-between shadow-lg">
-            <div className="flex items-center gap-2.5">
+          <div className="w-full p-3 sm:p-4 rounded-2xl bg-rose-950/40 border border-rose-800/60 text-rose-200 text-xs flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2.5 min-w-0">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{errorMsg}</span>
+              <span className="truncate">{errorMsg}</span>
             </div>
-            <button onClick={() => setErrorMsg(null)} className="text-rose-400 hover:text-white text-xs underline ml-4">
+            <button onClick={() => setErrorMsg(null)} className="text-rose-400 hover:text-white text-xs underline ml-3 shrink-0 cursor-pointer">
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Interviewer Glowing Orb */}
-        <div className="py-4 flex flex-col items-center">
+        {/* Centerpiece: Calm Apple Intelligence Orb */}
+        <div className="py-1 sm:py-2 flex flex-col items-center">
           <Orb state={orbState} size="xl" volume={audioVolume} />
         </div>
 
-        {/* Current Question Card */}
-        <div className="w-full bg-[#0D1322]/90 border border-slate-800/80 rounded-3xl p-6 sm:p-8 backdrop-blur-md shadow-2xl text-center space-y-4">
+        {/* Interviewer Question Module */}
+        <div className="w-full bg-[#1C1C1F] border border-[#2E2E35] rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-lg text-center space-y-3 sm:space-y-4">
           <div className="flex items-center justify-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[11px] font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-slate-300 text-[10px] font-semibold uppercase tracking-wider">
               {currentTurn.category}
             </span>
             {currentTurn.is_follow_up && (
-              <span className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[11px] font-bold uppercase tracking-wider">
-                Follow-Up Question
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-semibold uppercase tracking-wider">
+                Follow-Up Probe
               </span>
             )}
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-100 leading-snug tracking-tight max-w-2xl mx-auto">
+          <h2 className="text-sm sm:text-xl font-medium sm:font-semibold text-white leading-relaxed tracking-tight max-w-2xl mx-auto">
             {currentTurn.question_text}
           </h2>
 
-          {/* Re-play voice question button */}
-          <div className="flex items-center justify-center gap-2 pt-1">
+          {/* Replay Audio Button */}
+          <div className="flex items-center justify-center pt-0.5">
             <button
               onClick={() => speakText(currentTurn.question_text)}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 hover:bg-slate-800 border border-slate-700/70 text-slate-400 hover:text-slate-200 text-xs transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#26262B] hover:bg-[#2E2E35] border border-[#383842] text-slate-300 text-xs transition cursor-pointer min-h-[36px]"
             >
-              <Volume2 className="w-3 h-3 text-cyan-400" />
+              <Volume2 className="w-3.5 h-3.5 text-slate-400" />
               <span>Replay Question</span>
             </button>
           </div>
         </div>
 
-        {/* Live Answer Feedback preview (if transcribing or practice review) */}
-        {liveTranscriptPreview && (
-          <div className="w-full p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/50 text-indigo-200 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[10px] text-indigo-400">
-              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Transcribed Answer (Submitted Directly to AI)</span>
-            </div>
-            <p className="text-slate-300 italic line-clamp-3">"{liveTranscriptPreview}"</p>
-          </div>
-        )}
-
-        {/* Practice Mode Instant Feedback Modal/Drawer */}
-        {showPracticeFeedback && turnEvaluation && (
-          <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
+        {/* Practice Mode Coaching Feedback Modal / Drawer */}
+        {turnEvaluation && (
+          <div className="w-full p-6 rounded-3xl bg-[#1C1C1F] border border-[#2E2E35] space-y-4 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-[#2E2E35]">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span className="font-bold text-sm text-slate-200">Immediate Turn Evaluation</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-semibold text-white">Turn Assessment Score</span>
               </div>
-              <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300">
-                Score: {turnEvaluation.overall_turn_score}/5
-              </span>
+              <div className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                {turnEvaluation.overall_score || "4.0"} / 5.0
+              </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {turnEvaluation.spoken_coaching_summary}
-            </p>
+            {turnEvaluation.missing_points && turnEvaluation.missing_points.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider">Key Gaps / Missing Points:</span>
+                <ul className="text-xs text-slate-300 list-disc list-inside space-y-1">
+                  {turnEvaluation.missing_points.map((pt: string, idx: number) => (
+                    <li key={idx}>{pt}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={handleContinueNextTurn}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition"
-              >
-                Continue to Next Question &rarr;
-              </button>
-            </div>
+            {turnEvaluation.stronger_answer && (
+              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 text-xs text-slate-300 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Recommended Coaching Answer:</span>
+                <p className="leading-relaxed">{turnEvaluation.stronger_answer}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleAdvanceToNextTurn}
+              className="w-full py-3 rounded-2xl bg-white hover:bg-slate-100 text-black font-semibold text-xs transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Continue to Next Question</span>
+              <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+            </button>
           </div>
         )}
 
-        {/* Typed Answer Mode (Alternative to voice) */}
-        {useTypedMode && (
-          <div className="w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 space-y-3 shadow-xl">
+        {/* Technical Scratchpad (Expandable) */}
+        {scratchpadOpen && (
+          <div className="w-full p-4 rounded-3xl bg-[#1C1C1F] border border-[#2E2E35] space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="font-semibold">Type your response below:</span>
-              <button onClick={() => setUseTypedMode(false)} className="text-indigo-400 hover:underline">
-                Switch to Voice
+              <span className="font-semibold text-slate-200">Scratchpad (Architecture & Code Thoughts)</span>
+              <button onClick={() => setScratchpadOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
             <textarea
               rows={4}
-              value={typedAnswer}
-              onChange={(e) => setTypedAnswer(e.target.value)}
-              placeholder="Structure your answer using STAR method or architectural trade-offs..."
-              className="w-full p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-200 placeholder:text-slate-600 text-xs focus:outline-hidden focus:border-indigo-500"
+              value={scratchpadText}
+              onChange={(e) => setScratchpadText(e.target.value)}
+              placeholder="Jot down time complexity, algorithm steps, or system design trade-offs here..."
+              className="w-full p-3 bg-black/40 border border-white/10 rounded-2xl text-xs font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none"
             />
-            <div className="flex justify-end">
-              <button
-                onClick={() => submitAnswerDirectly(typedAnswer, false)}
-                disabled={!typedAnswer.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold transition shadow-xs"
-              >
-                <Send className="w-3.5 h-3.5" /> Submit to AI
-              </button>
-            </div>
+          </div>
+        )}
+
+        {/* Primary Interaction Controls (Siri-grade Voice & Dictation UX) */}
+        {!turnEvaluation && (
+          <div className="w-full max-w-md mx-auto flex flex-col items-center gap-2.5">
+            {!useTypedMode ? (
+              // Voice Answering Mode
+              <div className="w-full flex flex-col items-center gap-2.5">
+                <div className="w-full flex justify-center">
+                  {!isRecording ? (
+                    // Start Speaking Button (Comfortable 48-52px touch target)
+                    <button
+                      onClick={startRecording}
+                      disabled={isEvaluating}
+                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-white hover:bg-slate-100 text-black font-semibold text-xs sm:text-sm transition-all duration-150 shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px]"
+                    >
+                      <Mic className="w-4 h-4 text-black shrink-0" />
+                      <span>Click to Answer by Voice</span>
+                    </button>
+                  ) : (
+                    // Active Recording Stop & Submit Button
+                    <button
+                      onClick={stopRecordingAndSubmit}
+                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-[#1B6B50] hover:bg-[#155A43] text-white font-semibold text-xs sm:text-sm transition-all duration-150 shadow-md flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px] animate-pulse"
+                    >
+                      <Square className="w-4 h-4 fill-white text-white shrink-0" />
+                      <span>Complete & Submit ({formatSeconds(recordingDuration)})</span>
+                    </button>
+                  )}
+                </div>
+
+                {isEvaluating && (
+                  <div className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 font-medium">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Transcribing voice and evaluating rubric...</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setUseTypedMode(true)}
+                  className="text-[11px] text-slate-500 hover:text-slate-300 transition flex items-center gap-1.5 cursor-pointer min-h-[38px] px-3"
+                >
+                  <Keyboard className="w-3 h-3" />
+                  <span>Switch to Typed Text Answer</span>
+                </button>
+              </div>
+            ) : (
+              // Typed Fallback Mode
+              <form onSubmit={handleTypedSubmit} className="w-full space-y-2">
+                <div className="relative">
+                  <textarea
+                    rows={3}
+                    required
+                    value={typedAnswer}
+                    onChange={(e) => setTypedAnswer(e.target.value)}
+                    placeholder="Type your structured answer here (trade-offs, approach, edge cases)..."
+                    className="w-full p-3.5 sm:p-4 bg-[#1C1C1F] border border-[#2E2E35] rounded-2xl text-base sm:text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none shadow-sm"
+                  />
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setUseTypedMode(false)}
+                      className="text-[11px] text-slate-400 hover:text-white px-2 py-1.5 min-h-[36px]"
+                    >
+                      Use Voice Instead
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isEvaluating || !typedAnswer.trim()}
+                      className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-black font-semibold text-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer min-h-[40px]"
+                    >
+                      {isEvaluating ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Scoring...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Submit Answer</span>
+                          <Send className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </main>
 
-      {/* Bottom Action Dock: SEAMLESS HANDS-FREE VOICE CONTROL */}
-      <footer className="relative z-20 border-t border-slate-800/80 bg-[#0B0F1C]/95 backdrop-blur-md p-4 sm:p-6">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Mode helper note */}
-          <div className="text-center sm:text-left">
-            <div className="text-xs font-semibold text-slate-300">
-              {isRecording ? "Listening to your answer..." : "Ready for your answer"}
-            </div>
-            <div className="text-[11px] text-slate-500">
-              {isRecording
-                ? `Recording: ${formatSeconds(recordingDuration)} • Tap Finish Answer when done`
-                : "Tap Speak Answer to reply naturally like a real interview"}
-            </div>
-          </div>
-
-          {/* Primary Voice Action Button */}
-          <div className="flex items-center gap-3">
-            {!isRecording ? (
-              <button
-                onClick={startRecording}
-                disabled={orbState === "thinking" || orbState === "transcribing"}
-                className="group relative flex items-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>Speak Answer</span>
-              </button>
-            ) : (
-              <button
-                onClick={stopRecordingAndSubmit}
-                className="flex items-center gap-3 px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/40 animate-pulse transition-all"
-              >
-                <Square className="w-4 h-4 fill-white" />
-                <span>Done Speaking — Send to AI</span>
-              </button>
-            )}
-
-            {/* Toggle Typed Mode */}
-            <button
-              onClick={() => setUseTypedMode(!useTypedMode)}
-              className={cn(
-                "p-3.5 rounded-2xl border transition",
-                useTypedMode
-                  ? "bg-indigo-600 border-indigo-500 text-white"
-                  : "bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
-              )}
-              title="Type response instead of speaking"
-            >
-              <Keyboard className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* Technical Scratchpad Drawer */}
-      {scratchpadOpen && (
-        <aside className="fixed inset-y-0 right-0 w-80 sm:w-96 bg-[#0E1322] border-l border-slate-800 shadow-2xl z-50 p-5 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-cyan-400" />
-                <span className="font-bold text-sm text-slate-200">Technical Scratchpad</span>
-              </div>
-              <button onClick={() => setScratchpadOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Draft pseudocode, formulas, or system design trade-offs. The AI will evaluate this alongside your spoken answer.
-            </p>
-            <textarea
-              rows={16}
-              value={scratchpadText}
-              onChange={(e) => setScratchpadText(e.target.value)}
-              placeholder="e.g.&#10;class LRUCache:&#10;  def __init__(self, capacity):&#10;    ...&#10;&#10;Tradeoffs: O(1) get & put using Hashmap + Doubly Linked List"
-              className="w-full p-3 font-mono text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-hidden focus:border-indigo-500 resize-none"
-            />
-          </div>
-          <button
-            onClick={() => setScratchpadOpen(false)}
-            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition"
-          >
-            Keep & Close Scratchpad
-          </button>
-        </aside>
-      )}
-
-      {/* Early End Confirmation Modal */}
+      {/* Early Exit Confirmation Modal */}
       {showEndModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1C1C1F] border border-[#2E2E35] rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-100">Conclude Interview Early?</h3>
-              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                You can generate a partial debrief scorecard based on the answers you have given so far. Raw audio is never saved.
+              <h3 className="text-base font-semibold text-white">Conclude Session Early?</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                Your completed turns will be scored and compiled into a partial debrief report so you never lose progress.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setShowEndModal(false)}
-                className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition"
+                className="flex-1 py-2.5 rounded-xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer"
               >
-                Resume Interview
+                Continue Round
               </button>
               <button
-                onClick={handleConfirmEndEarly}
-                className="py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-xs"
+                onClick={handleEndSessionEarly}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition cursor-pointer"
               >
-                End & View Debrief
+                Conclude & Debrief
               </button>
             </div>
           </div>
