@@ -40,10 +40,10 @@ function DebriefContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-6 h-6 text-[#5967F2] animate-spin" />
-        <span className="text-xs uppercase tracking-widest font-semibold text-slate-500">
-          Generating Comprehensive Debrief...
+      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
+        <span className="text-xs text-slate-500 font-medium">
+          Loading debrief...
         </span>
       </div>
     );
@@ -51,10 +51,10 @@ function DebriefContent() {
 
   if (error || !session) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
-          <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
-          <h2 className="text-base font-bold text-[#20232C]">Debrief Unavailable</h2>
+      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center p-4">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
+          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+          <h2 className="text-base font-bold text-[#202124]">Debrief Unavailable</h2>
           <p className="text-xs text-slate-600 leading-relaxed">{error || "Could not retrieve debrief records."}</p>
         </div>
       </div>
@@ -62,7 +62,7 @@ function DebriefContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
+    <div className="min-h-screen bg-white text-[#202124] flex flex-col">
       <Navbar user={user} />
       <main className="flex-1">
         <DebriefView session={session} turns={turns} debrief={session.debrief} />
@@ -75,10 +75,10 @@ export default function DebriefPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F4F1EA] flex flex-col items-center justify-center space-y-3">
-          <RefreshCw className="w-6 h-6 text-[#5967F2] animate-spin" />
-          <span className="text-xs uppercase tracking-widest font-semibold text-slate-500">
-            Generating Comprehensive Debrief...
+        <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
+          <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
+          <span className="text-xs text-slate-500 font-medium">
+            Loading debrief...
           </span>
         </div>
       }

@@ -1,0 +1,481 @@
+[
+  {
+    "id": "aiml_foundations_001",
+    "short_title": "Data Leakage & Train/Val/Test Integrity",
+    "question": "What is data leakage in machine learning, and how does it happen during data preprocessing (for example, feature scaling or imputation)? If your model achieves 99.4% accuracy during cross-validation but drops to 62% in production on fresh customer data, what steps would you take to diagnose whether leakage or distribution shift occurred?",
+    "role": "ai_ml_engineer",
+    "phase": "foundations",
+    "question_type": "debugging",
+    "category": "ml_foundations",
+    "primary_skill": "Machine Learning Foundations",
+    "secondary_skills": [
+      "Data Leakage",
+      "Cross-Validation",
+      "Distribution Shift"
+    ],
+    "concepts": [
+      "Machine Learning Foundations",
+      "Data Leakage",
+      "Cross-Validation",
+      "Distribution Shift",
+      "cross validation"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://www.coderpad.io/survey-reports/coderpad-state-of-tech-hiring-2026/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "ai_ml",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Data leakage occurs when information from outside the training dataset (such as future timestamps or target labels) leaks into model training. Preprocessing example: fitting StandardScaler on the full dataset rather than only training folds. Diagnosis: 1) Verify preprocessing pipelines (e.g. Scikit-learn Pipeline) fit only on train split. 2) Compare feature distributions between train and production using statistical tests (KS-test, PSI). 3) Check for target leakage or target-correlated features created after event occurrence.",
+    "rubric_1_to_5": {
+      "score_1": "Confuses data leakage with overfitting or thinks fitting a scaler on the entire dataset is harmless.",
+      "score_3": "Identifies that test sets shouldn't be scaled with train sets, but has vague diagnostic steps for the production degradation.",
+      "score_5": "Explains subtle leakage vectors (temporal leakage, group leakage, target proxies), outlines Scikit-learn Pipeline best practices, and specifies concrete distribution drift metrics (PSI, KS-test)."
+    },
+    "follow_up_directions": [
+      "In time-series forecasting, why does standard k-fold cross-validation cause leakage, and what validation strategy should you use instead?",
+      "How would you detect covariate shift versus concept drift in production?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_metrics_001",
+    "short_title": "Imbalanced Data & Metric Selection (Precision-Recall vs ROC-AUC)",
+    "question": "In a fraud detection task where only 0.1% of transactions are fraudulent, explain why raw Accuracy and ROC-AUC can be dangerously misleading. When should an engineer prefer the Precision-Recall curve (PR-AUC) over ROC-AUC, and how would you tune the classification threshold based on business costs?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "trade-off-analysis",
+    "category": "ml_metrics",
+    "primary_skill": "Model Evaluation & Metrics",
+    "secondary_skills": [
+      "Imbalanced Classification",
+      "ROC-AUC vs PR-AUC",
+      "Cost-Sensitive Learning"
+    ],
+    "concepts": [
+      "Model Evaluation & Metrics",
+      "Imbalanced Classification",
+      "ROC-AUC vs PR-AUC",
+      "Cost-Sensitive Learning",
+      "roc auc",
+      "pr auc",
+      "class imbalance"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://www.landed.jobs/articles/ai-engineer-interview-questions-2026"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Accuracy is misleading because predicting all negatives achieves 99.9% accuracy. ROC-AUC plots True Positive Rate vs False Positive Rate; when True Negatives are overwhelmingly large, FPR stays tiny even with thousands of False Positives. PR-AUC focuses on minority class (True Positives relative to False Positives). Threshold tuning: construct a cost matrix where cost = (Cost_FN * FN) + (Cost_FP * FP), and pick threshold minimizing total cost.",
+    "rubric_1_to_5": {
+      "score_1": "Recommends accuracy for imbalanced fraud or cannot explain why ROC-AUC is insensitive to large negative pools.",
+      "score_3": "Knows PR-AUC is better for imbalance, but cannot mathematically contrast FPR vs Precision denominator, or explain cost-based thresholding.",
+      "score_5": "Crisply contrasts FPR (FP / (FP + TN)) with Precision (TP / (TP + FP)), explains visual inflation in ROC curves, and formulates cost-matrix threshold optimization."
+    },
+    "follow_up_directions": [
+      "What are the pros and cons of SMOTE oversampling compared to class-weighted cross-entropy loss in deep neural networks?",
+      "What is model calibration (e.g. Platt scaling / Brier score), and why does it matter before picking a threshold?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_dl_001",
+    "short_title": "PyTorch Gradient Flow & Vanishing Gradients",
+    "question": "While training a deep neural network in PyTorch, the training loss plateaus immediately and gradients in the early layers drop to near zero. What are the common architectural and initialization reasons for vanishing gradients, and how would you inspect and resolve this in PyTorch code?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "debugging",
+    "category": "ml_foundations",
+    "primary_skill": "Deep Learning & PyTorch",
+    "secondary_skills": [
+      "Vanishing Gradients",
+      "Residual Connections",
+      "Weight Initialization"
+    ],
+    "concepts": [
+      "Deep Learning & PyTorch",
+      "Vanishing Gradients",
+      "Residual Connections",
+      "Weight Initialization",
+      "vanishing gradient",
+      "residual connection",
+      "initialization"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Causes: Sigmoid/Tanh saturating activations in deep stacks (derivative <= 0.25 multiplying through chain rule), improper weight initialization (e.g. too small variance), lack of normalization layers. PyTorch inspection: iterate through model.named_parameters() after loss.backward() and inspect param.grad.abs().mean() per layer, or log to TensorBoard/WandB. Solutions: switch to ReLU/GELU, He (Kaiming) or Xavier initialization, add LayerNorm / BatchNorm, and introduce residual/skip connections (ResNet).",
+    "rubric_1_to_5": {
+      "score_1": "Cannot explain the mathematical reason gradients shrink through backpropagation chain rule.",
+      "score_3": "Identifies saturating activations and suggests ReLU, but cannot explain how to inspect gradients in PyTorch or the role of normalization.",
+      "score_5": "Calculates or articulates chain rule gradient multiplication, demonstrates PyTorch gradient logging, details Kaiming initialization variance formula, and explains skip connections as highway gradient paths."
+    },
+    "follow_up_directions": [
+      "What is the mathematical purpose of torch.nn.utils.clip_grad_norm_, and does it prevent vanishing or exploding gradients?",
+      "Why is LayerNorm preferred over BatchNorm in Transformers and sequence models?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_rag_001",
+    "short_title": "RAG Quality: Isolating Retrieval from Generation Failure",
+    "question": "Your retrieval-augmented generation (RAG) assistant produces plausible-sounding answers, but frequently cites irrelevant document chunks or hallucinates facts not present in the retrieved passages. How would you systematically isolate whether the failure is in the retrieval pipeline or the generator (LLM), and what metrics would you track for each?",
+    "role": "ai_ml_engineer",
+    "phase": "project_depth",
+    "question_type": "ai-assisted-engineering",
+    "category": "rag",
+    "primary_skill": "Generative AI & LLM Systems",
+    "secondary_skills": [
+      "RAG Architecture",
+      "Vector Search & Chunking",
+      "Hallucination Evals"
+    ],
+    "concepts": [
+      "Generative AI & LLM Systems",
+      "RAG Architecture",
+      "Vector Search & Chunking",
+      "Hallucination Evals",
+      "rag",
+      "vector search",
+      "chunking",
+      "hallucination"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://www.coderpad.io/survey-reports/coderpad-state-of-tech-hiring-2026/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Isolate by decomposing into two distinct evaluation stages (e.g. Ragas / TruLens framework): 1) Retrieval Evaluation: Context Relevance, Hit Rate @ K, MRR (Mean Reciprocal Rank). Inspect chunk size, overlap, embedding model, and hybrid search (BM25 + Dense vector search + Cross-Encoder reranker). 2) Generation Evaluation: Faithfulness (Groundedness) — does the answer contain only facts supported by context? and Answer Relevance — does it directly address the user's query? If context lacks the answer, it's a retrieval failure; if context has the answer but LLM hallucinates, it's a prompt/context window/generator failure.",
+    "rubric_1_to_5": {
+      "score_1": "Suggests simply 'fine-tuning the LLM' without evaluating chunking strategy or measuring retrieval accuracy.",
+      "score_3": "Identifies that retrieval and generation are separate, but has no concrete metrics or tools to isolate where the breakdown occurs.",
+      "score_5": "Clearly delineates Context Relevance / Recall vs Faithfulness / Groundedness, suggests hybrid retrieval with reranking, and outlines automated synthetic evaluation datasets."
+    },
+    "follow_up_directions": [
+      "How does chunk size and semantic chunking impact embedding similarity vs LLM context digestion?",
+      "How would you prevent prompt injection attacks when embedding user-provided documents into a company RAG system?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_agentic_001",
+    "short_title": "Autonomous Agent Planning, State & Tool Execution Loops",
+    "question": "When designing an autonomous AI agent to execute multi-step database migrations or API calls, how do you architect the planning and execution loop (e.g., ReAct vs Plan-and-Solve)? How do you prevent the agent from looping indefinitely or executing duplicate destructive side-effects when an intermediate tool returns a rate limit or timeout?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "practical-design",
+    "category": "agentic_ai",
+    "primary_skill": "Agentic AI & Workflow Orchestration",
+    "secondary_skills": [
+      "ReAct Pattern",
+      "Idempotency",
+      "Termination Conditions",
+      "Loop Detection"
+    ],
+    "concepts": [
+      "Agentic AI & Workflow Orchestration",
+      "ReAct Pattern",
+      "Idempotency",
+      "Termination Conditions",
+      "Loop Detection",
+      "agent loop",
+      "tool calling",
+      "termination"
+    ],
+    "difficulty": "Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://developers.googleblog.com/evaluating-ai-agents-moving-past-the-vibe-check/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Planning architecture: Plan-and-Solve splits initial decomposition from iterative execution, while ReAct couples Thought-Action-Observation step-by-step for dynamic discovery. Preventing infinite loops: 1) Hard step budget (max_iterations, e.g. 8). 2) Action signature hashing / cycle detection — if identical tool name and arguments repeat with identical error, abort to human-in-the-loop fallback. Preventing duplicate destructive side-effects: require idempotency keys on all write operations, separate read-only exploration tools from write tools, and implement a dry-run / confirmation boundary before mutation.",
+    "rubric_1_to_5": {
+      "score_1": "Assumes the LLM will naturally avoid duplicate tool executions or loops without explicit software guardrails.",
+      "score_3": "Mentions a maximum step counter and basic try/catch, but misses idempotency keys, state checkpoints, and cycle detection.",
+      "score_5": "Clearly articulates the ReAct loop mechanics, action-fingerprint cycle detection, idempotency tokens for tools with side-effects, and formal termination conditions."
+    },
+    "follow_up_directions": [
+      "How would you persist the agent's short-term working scratchpad across stateless serverless invocations?",
+      "When is a multi-agent hierarchy (router/supervisor + specialized workers) superior to a single monolithic prompt with 20 tools?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_langgraph_001",
+    "short_title": "LangGraph State Graphs, Checkpointing & Human Approval",
+    "question": "In LangGraph or stateful agentic frameworks, how do StateGraphs handle memory, message channels, and checkpointing? Explain how you would implement a Human-in-the-Loop approval gate for a high-value financial transaction, including how execution pauses, persists state, and resumes without losing conversation history.",
+    "role": "ai_ml_engineer",
+    "phase": "project_depth",
+    "question_type": "practical-design",
+    "category": "langgraph",
+    "primary_skill": "LangChain & LangGraph Orchestration",
+    "secondary_skills": [
+      "StateGraph",
+      "Checkpointers",
+      "Human-in-the-Loop",
+      "Async Resumption"
+    ],
+    "concepts": [
+      "LangChain & LangGraph Orchestration",
+      "StateGraph",
+      "Checkpointers",
+      "Human-in-the-Loop",
+      "Async Resumption",
+      "checkpointer",
+      "human in the loop"
+    ],
+    "difficulty": "Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://reference.langchain.com/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "StateGraph structure: Nodes represent compute functions or LLM calls; Edges represent conditional routing transitions. State schema uses reducer annotations (e.g. Annotated[list, operator.add] for message history). Checkpointing: using a Checkpointer (e.g. PostgresSaver, SqliteSaver) keyed on thread_id. Human-in-the-Loop: use interrupt_before or interrupt_after on the approval node. LangGraph pauses execution, saves snapshot state to DB, and returns control to client. Once user approves, the application calls graph.invoke(None, config={'configurable': {'thread_id': '...'}}), which rehydrates the state and continues downstream edges seamlessly.",
+    "rubric_1_to_5": {
+      "score_1": "Has no concept of state persistence or thinks human approval requires keeping a blocking Python thread alive indefinitely.",
+      "score_3": "Understands that state is saved, but has vague details on thread IDs, reducers, or how the graph resumes from interrupts.",
+      "score_5": "Rigorously details LangGraph StateGraph reducers, checkpointer schema keyed on thread_id, interrupt mechanism, and stateless rehydration via graph.invoke."
+    },
+    "follow_up_directions": [
+      "How do you handle graph state rollbacks or time-travel debugging when a downstream tool fails?",
+      "What is the difference between compile() with a checkpointer versus ephemeral memory (MemorySaver) in production?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_rag_chunking_001",
+    "short_title": "Advanced Chunking, Reranking & Vector Index Trade-offs",
+    "question": "You are building a RAG pipeline over dense technical manuals with tables, code snippets, and long-form text. Why does naive fixed-size chunking (e.g. 500 characters with 50-character overlap) fail on tables and code? What chunking and indexing strategies (e.g., semantic chunking, parent-document retrieval, Cross-Encoder reranking) would you use instead?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "trade-off-analysis",
+    "category": "rag",
+    "primary_skill": "RAG Engineering & Retrieval",
+    "secondary_skills": [
+      "Semantic Chunking",
+      "Cross-Encoder Rerankers",
+      "HNSW vs IVF Indexing",
+      "Parent Document Retrieval"
+    ],
+    "concepts": [
+      "RAG Engineering & Retrieval",
+      "Semantic Chunking",
+      "Cross-Encoder Rerankers",
+      "HNSW vs IVF Indexing",
+      "Parent Document Retrieval",
+      "reranker",
+      "hnsw",
+      "retrieval"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://www.coderpad.io/survey-reports/coderpad-state-of-tech-hiring-2026/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Why naive fails: cuts table rows in half destroying markdown schema; splits code functions across boundary losing variable scope; dilutes embeddings with fragmented context. Advanced solutions: 1) Structure-aware/Markdown parsing preserving tables as single semantic units or converted to key-value representations. 2) Parent-Document Retrieval: index small 200-token chunks for accurate vector embedding matching, but retrieve the larger parent section (1500 tokens) to pass into the LLM context. 3) Two-stage retrieval: broad recall via hybrid search (BM25 + Dense vector HNSW), followed by a Cross-Encoder reranker (e.g. Cohere Rerank / BGE-Reranker) that scores (query, chunk) jointly to filter irrelevant items.",
+    "rubric_1_to_5": {
+      "score_1": "Recommends just making chunks 10,000 tokens long or cannot see why splitting a markdown table ruins semantic retrieval.",
+      "score_3": "Mentions using larger overlap, but unaware of parent-document retrieval or cross-encoder rerankers.",
+      "score_5": "Explains loss of schema in naive splits, details parent-document retrieval mechanics, and contrasts Bi-Encoder vector search speed with Cross-Encoder reranker precision."
+    },
+    "follow_up_directions": [
+      "How do HNSW (Hierarchical Navigable Small World) graph parameters (M, efConstruction, efSearch) trade off recall vs QPS?",
+      "How do you handle multi-modal documents containing architecture diagrams alongside text?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_llm_eval_001",
+    "short_title": "LLM Evaluations: Golden Datasets, Ragas & LLM-as-a-Judge",
+    "question": "Moving beyond subjective 'vibe checks', how do you construct a rigorous evaluation harness for an enterprise LLM feature? Explain how you build a golden evaluation dataset, calibrate LLM-as-a-Judge to prevent position bias and verbosity bias, and incorporate regression tests into a CI/CD deployment pipeline.",
+    "role": "ai_ml_engineer",
+    "phase": "project_depth",
+    "question_type": "ai-assisted-engineering",
+    "category": "llm_eval_latency",
+    "primary_skill": "LLM Evaluations & MLOps",
+    "secondary_skills": [
+      "LLM-as-a-Judge",
+      "Position Bias",
+      "CI/CD Evals",
+      "Golden Datasets"
+    ],
+    "concepts": [
+      "LLM Evaluations & MLOps",
+      "LLM-as-a-Judge",
+      "Position Bias",
+      "CI/CD Evals",
+      "Golden Datasets",
+      "llm as judge",
+      "golden dataset"
+    ],
+    "difficulty": "Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://developers.googleblog.com/evaluating-ai-agents-moving-past-the-vibe-check/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Evaluation framework: 1) Golden Dataset: curated representative queries covering typical requests, edge cases, adversarial inputs, and negative queries where model should decline to answer. 2) Metrics: deterministic (regex, JSON schema adherence, exact match) alongside model-graded metrics (groundedness, relevance, toxicity). 3) Mitigating LLM-as-a-judge bias: swap candidate order to eliminate position bias (pairwise evaluation), enforce strict length penalties or normalized rubrics to counter verbosity bias, and provide few-shot anchored reference examples. 4) CI/CD integration: run lightweight evals on pull requests, gating merges on pass rates and latency/cost thresholds.",
+    "rubric_1_to_5": {
+      "score_1": "Relies exclusively on manual ad-hoc testing with 2-3 sample prompts.",
+      "score_3": "Suggests using GPT-4 to score outputs, but cannot identify judge biases (position, verbosity, self-preference) or CI/CD gate criteria.",
+      "score_5": "Comprehensive design covering golden set curation, bias mitigation (swapped order, anchored rubrics), unit/deterministic tests, and automated PR quality gates."
+    },
+    "follow_up_directions": [
+      "How do you measure agreement between human expert raters and LLM judges (e.g. Cohen's Kappa)?",
+      "What is synthetic test data generation, and how do you ensure synthetic test cases don't inherit the generator model's blind spots?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_latency_cost_001",
+    "short_title": "Inference Optimization: TTFT, TPOT & Prompt Caching",
+    "question": "In production LLM applications, what is the technical distinction between Time to First Token (TTFT) and Time per Output Token (TPOT)? If your customer-facing chat agent has an unacceptable 4-second TTFT on a 15,000-token prompt, what architectural strategies (such as KV caching, prompt caching, spec-decoding, and semantic routing) would you apply?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "trade-off-analysis",
+    "category": "llm_eval_latency",
+    "primary_skill": "LLM Serving & Latency Optimization",
+    "secondary_skills": [
+      "TTFT vs TPOT",
+      "KV Caching",
+      "Prompt Caching",
+      "Speculative Decoding"
+    ],
+    "concepts": [
+      "LLM Serving & Latency Optimization",
+      "TTFT vs TPOT",
+      "KV Caching",
+      "Prompt Caching",
+      "Speculative Decoding",
+      "ttft",
+      "tpot",
+      "kv cache"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://www.landed.jobs/articles/ai-engineer-interview-questions-2026"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "TTFT measures prefill latency (processing the input prompt to generate token 1); TPOT measures decode latency (generating subsequent tokens autoregressively). 4-second TTFT on 15k tokens is dominated by prefill computation. Solutions: 1) Provider prompt caching (e.g. Anthropic/Groq prompt caching where static system instructions and few-shot examples are cached, cutting TTFT by up to 80% and cost by 90%). Ensure static prefixes precede dynamic variables. 2) Chunking / context minimization: retrieve only top-K relevant passages rather than 15k bulk text. 3) Semantic caching: cache identical user queries using vector similarity. 4) Speculative decoding optimizes decode TPOT, not prefill TTFT.",
+    "rubric_1_to_5": {
+      "score_1": "Cannot differentiate prefill (TTFT) from autoregressive generation (TPOT) or suggests speculative decoding to fix prompt prefill latency.",
+      "score_3": "Knows TTFT is prompt processing time, but offers only generic advice like 'use a smaller model'.",
+      "score_5": "Accurately contrasts prefill vs decode compute bottlenecks, explains prefix-stable prompt caching requirements, and pairs retrieval trimming with caching."
+    },
+    "follow_up_directions": [
+      "Why does changing the order of tools or dynamic timestamps at the beginning of a prompt invalidate prompt caches?",
+      "What are the trade-offs of quantized models (AWQ, GPTQ, INT4) on memory bandwidth vs inference perplexity?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "aiml_agent_debug_001",
+    "short_title": "Debugging Agent Failures: Tool Loops & Hallucinated Arguments",
+    "question": "You deployed an autonomous customer-support agent equipped with SQL and refund tools. In production logs, you notice two critical failure modes: 1) For certain queries, the agent enters an infinite loop calling the same search tool with slightly different typos. 2) The agent invents non-existent function parameters (e.g. refund_amount_usd instead of amount_cents). How do you debug and resolve both issues in your agentic architecture?",
+    "role": "ai_ml_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "debugging",
+    "category": "agentic_ai",
+    "primary_skill": "Agentic AI Debugging & Guardrails",
+    "secondary_skills": [
+      "Tool Calling Robustness",
+      "Pydantic Schema Validation",
+      "Loop Prevention",
+      "Deterministic Guardrails"
+    ],
+    "concepts": [
+      "Agentic AI Debugging & Guardrails",
+      "Tool Calling Robustness",
+      "Pydantic Schema Validation",
+      "Loop Prevention",
+      "Deterministic Guardrails",
+      "tool schema",
+      "guardrail",
+      "loop detection"
+    ],
+    "difficulty": "Hard",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://developers.googleblog.com/evaluating-ai-agents-moving-past-the-vibe-check/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "ai_ml_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Issue 1 (Tool Loops): Implement deterministic loop detection using a sliding window of recent tool calls. Track (tool_name, hash(arguments)). If the same tool executes >3 times with identical or zero-result output, break loop and inject an explicit observation message informing the agent that repeated attempts failed, or escalate to human agent. Set global step limits (max_iterations). Issue 2 (Hallucinated parameters): 1) Enforce strict structured outputs / function definitions using JSON Schema / Pydantic models with additionalProperties: false. 2) Wrap tool execution in an input validation layer (e.g. Instructor / Pydantic); if validation fails, return the Pydantic ValidationError text back to the LLM as the tool result so it self-corrects the schema rather than crashing. 3) Ensure tool descriptions provide explicit type hints and concise examples.",
+    "rubric_1_to_5": {
+      "score_1": "Suggests telling the LLM 'please do not make mistakes' in the prompt without software-level validation.",
+      "score_3": "Identifies Pydantic schemas and max retry counter, but misses error feedback loop for tool self-correction.",
+      "score_5": "Outlines software-level cycle detection, structured schema enforcement (additionalProperties: false), and feeding Pydantic validation errors back into the agent context for deterministic recovery."
+    },
+    "follow_up_directions": [
+      "How do you implement transaction rollbacks when an agent executes 2 out of 3 tools successfully and the 3rd fails?",
+      "How do you trace and visualize agent execution graphs in production using tools like LangSmith or Phoenix?"
+    ],
+    "version": "2026.1"
+  }
+]

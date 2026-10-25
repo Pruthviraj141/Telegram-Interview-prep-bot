@@ -75,30 +75,26 @@ export default function TrackerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#20232C] flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans">
       <Navbar user={user} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E5DD] text-[#20232C] text-xs font-semibold tracking-tight mb-2 shadow-xs">
-              <Briefcase className="w-3.5 h-3.5 text-[#4F46E5]" />
-              <span>Pipeline & Deadlines</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#20232C]">
-              Placement Pipeline
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
+              Applications
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-              Track target opportunities, deadlines, and link custom rehearsal drills to hiring rounds.
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Track job opportunities, interview rounds, and offer deadlines.
             </p>
           </div>
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#20232C] hover:bg-black text-white text-xs font-semibold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer min-h-[44px]"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Opportunity</span>
+            <span>Add Application</span>
           </button>
         </div>
 
@@ -115,12 +111,12 @@ export default function TrackerPage() {
                 className={cn(
                   "px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0",
                   isActive
-                    ? "bg-[#20232C] text-white shadow-xs"
-                    : "bg-white text-slate-600 border border-[#E8E5DD]"
+                    ? "bg-[#202124] text-white shadow-xs"
+                    : "bg-[#F7F7F5] text-slate-600 border border-[#E6E6E4]"
                 )}
               >
                 <span>{col}</span>
-                <span className={cn("text-[10px] px-1.5 py-0.2 rounded-full", isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500")}>
+                <span className={cn("text-[10px] px-1.5 py-0.2 rounded-full", isActive ? "bg-white/20 text-white" : "bg-white text-slate-500 border border-[#E6E6E4]")}>
                   {count}
                 </span>
               </button>
@@ -131,7 +127,7 @@ export default function TrackerPage() {
         {/* Board / Kanban View */}
         {loading ? (
           <div className="py-24 flex justify-center">
-            <RefreshCw className="w-6 h-6 text-[#20232C] animate-spin" />
+            <RefreshCw className="w-6 h-6 text-[#202124] animate-spin" />
           </div>
         ) : (
           <div>
@@ -140,10 +136,10 @@ export default function TrackerPage() {
               {COLUMNS.map((col) => {
                 const colItems = items.filter((it) => it.status === col);
                 return (
-                  <div key={col} className="bg-[#EAE6DD]/70 rounded-3xl p-4 flex flex-col min-w-[210px] border border-[#E0DCD2]">
+                  <div key={col} className="bg-[#F7F7F5] rounded-2xl p-4 flex flex-col min-w-[210px] border border-[#E6E6E4]">
                     <div className="flex items-center justify-between mb-3.5 px-1">
-                      <span className="text-xs font-semibold tracking-tight text-[#20232C]">{col}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-white border border-[#E8E5DD] text-[10px] font-bold text-slate-600">
+                      <span className="text-xs font-semibold tracking-tight text-[#202124]">{col}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-white border border-[#E6E6E4] text-[10px] font-bold text-slate-600">
                         {colItems.length}
                       </span>
                     </div>
@@ -152,11 +148,11 @@ export default function TrackerPage() {
                       {colItems.map((item) => (
                         <div
                           key={item.id}
-                          className="bg-white border border-[#E8E5DD] rounded-2xl p-4 shadow-xs hover:border-slate-300 transition space-y-2 group"
+                          className="bg-white border border-[#E6E6E4] rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition space-y-2 group"
                         >
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="font-semibold text-xs text-[#20232C]">{item.company}</div>
+                              <div className="font-semibold text-xs text-[#202124]">{item.company}</div>
                               <div className="text-[11px] text-slate-500">{item.role}</div>
                             </div>
                             <button
@@ -169,7 +165,7 @@ export default function TrackerPage() {
                           </div>
 
                           {item.deadline && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-700 bg-[#FAFAF8] px-2 py-1 rounded-lg border border-[#E8E5DD] font-medium">
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-700 bg-[#F7F7F5] px-2 py-1 rounded-lg border border-[#E6E6E4] font-medium">
                               <Calendar className="w-3 h-3 text-slate-400" />
                               <span>{item.deadline}</span>
                             </div>
@@ -178,7 +174,7 @@ export default function TrackerPage() {
                       ))}
 
                       {colItems.length === 0 && (
-                        <div className="border border-dashed border-[#D6D1C6] rounded-2xl p-5 text-center text-[11px] text-slate-400">
+                        <div className="border border-dashed border-[#E6E6E4] rounded-xl p-5 text-center text-[11px] text-slate-400">
                           Empty
                         </div>
                       )}
@@ -195,11 +191,11 @@ export default function TrackerPage() {
                 .map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white border border-[#E8E5DD] rounded-2xl p-4 shadow-xs space-y-2"
+                    className="bg-white border border-[#E6E6E4] rounded-xl p-4 shadow-xs space-y-2"
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-semibold text-sm text-[#20232C]">{item.company}</div>
+                        <div className="font-semibold text-sm text-[#202124]">{item.company}</div>
                         <div className="text-xs text-slate-500">{item.role}</div>
                       </div>
                       <button
@@ -211,7 +207,7 @@ export default function TrackerPage() {
                     </div>
 
                     {item.deadline && (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-[#FAFAF8] px-2.5 py-1 rounded-lg border border-[#E8E5DD] font-medium">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-[#F7F7F5] px-2.5 py-1 rounded-lg border border-[#E6E6E4] font-medium">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>Deadline: {item.deadline}</span>
                       </div>
@@ -220,8 +216,8 @@ export default function TrackerPage() {
                 ))}
 
               {items.filter((it) => it.status === mobileActiveStage).length === 0 && (
-                <div className="bg-white border border-[#E8E5DD] rounded-2xl p-8 text-center text-xs text-slate-400">
-                  No opportunities currently in {mobileActiveStage}. Click Add Opportunity above to track a company.
+                <div className="bg-white border border-[#E6E6E4] rounded-xl p-8 text-center text-xs text-slate-400">
+                  No applications in {mobileActiveStage}.
                 </div>
               )}
             </div>
@@ -232,9 +228,9 @@ export default function TrackerPage() {
       {/* Add Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E8E5DD] rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
+          <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#20232C]">Add Target Opportunity</h3>
+              <h3 className="text-base font-semibold text-[#202124]">Add Application</h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-black">
                 <X className="w-4 h-4" />
               </button>
@@ -242,32 +238,32 @@ export default function TrackerPage() {
 
             <form onSubmit={handleCreate} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Company Name</label>
+                <label className="block font-medium text-slate-700 mb-1">Company</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Google, Amazon, TCS"
+                  placeholder="e.g. Google, Amazon"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#202124]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Role Title</label>
+                <label className="block font-medium text-slate-700 mb-1">Role</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Software Development Engineer 1"
+                  placeholder="e.g. Software Engineer"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#202124]"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Hiring Stage</label>
+                  <label className="block font-medium text-slate-700 mb-1">Stage</label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -282,14 +278,13 @@ export default function TrackerPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Target Deadline</label>
+                  <label className="block font-medium text-slate-700 mb-1">Deadline</label>
                   <input
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white text-slate-700 text-base sm:text-xs"
-                  >
-                  </input>
+                  />
                 </div>
               </div>
 
@@ -297,16 +292,16 @@ export default function TrackerPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 transition min-h-[44px]"
+                  className="flex-1 py-2.5 rounded-xl border border-[#E6E6E4] text-[#5F6368] font-semibold hover:bg-[#F7F7F5] transition min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !company.trim() || !role.trim()}
-                  className="flex-1 py-3 rounded-xl bg-[#20232C] hover:bg-black text-white font-semibold transition disabled:opacity-50 cursor-pointer min-h-[44px]"
+                  className="flex-1 py-2.5 rounded-xl bg-[#202124] hover:bg-[#111113] text-white font-semibold transition disabled:opacity-50 cursor-pointer min-h-[44px]"
                 >
-                  {saving ? "Saving..." : "Create Record"}
+                  {saving ? "Saving..." : "Add"}
                 </button>
               </div>
             </form>

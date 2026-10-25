@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { Volume2, Play, Square, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getApiBase } from "@/lib/api";
 
 interface TTSComponentProps {
   className?: string;
@@ -28,7 +29,7 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
     }
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+      const apiBase = getApiBase();
       const response = await fetch(`${apiBase}/tts`, {
         method: "POST",
         headers: {
@@ -60,35 +61,31 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
   };
 
   return (
-    <div className={cn("p-6 sm:p-8 rounded-3xl bg-white border border-[#E8E5DD] text-[#20232C] shadow-xs space-y-4", className)}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#F4F1EA]">
+    <div className={cn("p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-white border border-[#E6E6E4] text-[#202124] shadow-xs space-y-4", className)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E6E6E4]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+          <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
             <Volume2 className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-[#20232C] tracking-tight">
-              Neural Voice Synthesis Tester
+            <h3 className="text-sm font-semibold text-[#202124] tracking-tight">
+              Voice Preview
             </h3>
-            <p className="text-[11px] text-slate-500">FastAPI streaming test with Edge TTS</p>
+            <p className="text-[11px] text-slate-500">Test voice output before your interview</p>
           </div>
         </div>
-
-        <span className="self-start sm:self-auto text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#FAFAF8] text-slate-700 border border-[#E8E5DD]">
-          Active Engine: {voice}
-        </span>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[11px] font-semibold text-slate-700">
-          Interview Script to Synthesize
+        <label className="text-[11px] font-medium text-slate-700">
+          Sample Prompt
         </label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type an interview prompt to test voice timbre..."
           rows={3}
-          className="w-full p-3.5 rounded-2xl bg-[#FAFAF8] border border-slate-300 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C] resize-none leading-relaxed"
+          className="w-full p-3.5 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124] resize-none leading-relaxed"
         />
       </div>
 
@@ -104,7 +101,7 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
           <select
             value={voice}
             onChange={(e) => setVoice(e.target.value)}
-            className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+            className="px-3 py-1.5 rounded-xl border border-[#E6E6E4] text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#202124]"
           >
             <option value="en-US-EmmaNeural">Emma (US • Female Recruiter)</option>
             <option value="en-US-ChristopherNeural">Christopher (US • Senior Systems Lead)</option>
@@ -118,17 +115,17 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
         <button
           onClick={handleGenerateVoice}
           disabled={loading || !text.trim()}
-          className="px-5 py-2.5 bg-[#20232C] hover:bg-black text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer min-h-[38px]"
+          className="px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer min-h-[38px]"
         >
           {loading ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Generating Audio...</span>
+              <span>Playing Voice...</span>
             </>
           ) : (
             <>
               <Play className="w-3.5 h-3.5 fill-white text-white" />
-              <span>Synthesize & Play</span>
+              <span>Play Sample</span>
             </>
           )}
         </button>

@@ -3,7 +3,18 @@
  * Handles authentication headers, token storage, and error parsing.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+export function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    return `http://${host}:8000/api`;
+  }
+  return "http://localhost:8000/api";
+}
+
+const API_BASE = getApiBase();
 
 export interface CandidateUser {
   id: string;
@@ -33,7 +44,15 @@ export interface InterviewSession {
   id: string;
   clerk_id: string;
   mode: "realistic" | "practice";
-  interviewer_style: "hr" | "technical" | "project_defence" | "mixed" | "dsa" | "system_design";
+  interviewer_style:
+    | "hr"
+    | "technical"
+    | "project_defence"
+    | "mixed"
+    | "dsa"
+    | "system_design"
+    | "aiml"
+    | "resume";
   duration_mode: "quick" | "standard" | "full";
   target_role: string;
   seniority: string;
@@ -41,9 +60,19 @@ export interface InterviewSession {
   status: "in_progress" | "completed" | "partial_completed" | "cancelled";
   current_turn_index: number;
   blueprint: any;
-  overall_score?: number;
+  overall_score?: number | null;
   debrief?: any;
   created_at: string;
+}
+
+export interface InterviewSource {
+  id: string;
+  title: string;
+  publisher: string;
+  url: string;
+  topic?: string;
+  source_type?: string;
+  verified_on?: string;
 }
 
 export interface InterviewTurn {
@@ -53,18 +82,26 @@ export interface InterviewTurn {
   question_id?: string;
   question_text: string;
   category: string;
-  rubric: any;
+  category_key?: string;
+  // Present in practice mode; intentionally absent in realistic mode until debrief.
+  rubric?: any;
   is_follow_up: boolean;
   original_transcript?: string;
   corrected_transcript?: string;
   typed_answer?: string;
   is_voice: number;
   scratchpad_text?: string;
+  audio_url?: string;
   evaluation?: any;
   evaluation_status: "pending" | "completed" | "failed";
   retry_count: number;
   retry_history?: any[];
   dispute_history?: any[];
+  // Provenance: where the question comes from. Always truthful, never a
+  // claim that a generated/curated question was asked by a company.
+  source_basis?: string;
+  sources?: InterviewSource[];
+  provenance?: { kind?: string; note?: string; [key: string]: any };
 }
 
 // Get or set local user token/ID
@@ -82,6 +119,23 @@ export function getStoredAuthToken(): string {
 export function setStoredAuthToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem("ai_coach_auth_token", token);
+  }
+}
+
+/**
+ * Error carrying the HTTP status so callers can distinguish recoverable
+ * states (e.g. 409 already-submitted, 502 model failure) without string
+ * matching on the message.
+ */
+export class ApiError extends Error {
+  status: number;
+  detail?: any;
+
+  constructor(message: string, status: number, detail?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -103,13 +157,18 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
   if (!response.ok) {
     let errorDetail = "API request failed";
+    let errJson: any = null;
     try {
-      const errJson = await response.json();
+      errJson = await response.json();
       errorDetail = errJson.detail?.message || errJson.detail || errorDetail;
     } catch {
       errorDetail = `HTTP ${response.status}: ${response.statusText}`;
     }
-    throw new Error(errorDetail);
+    throw new ApiError(
+      typeof errorDetail === "string" ? errorDetail : JSON.stringify(errorDetail),
+      response.status,
+      errJson?.detail
+    );
   }
 
   return response.json();
@@ -164,6 +223,8 @@ export const api = {
     mode: "realistic" | "practice";
     interviewer_style: string;
     duration_mode: string;
+    phase?: string;
+    drill_skill?: string;
     custom_categories?: string[];
   }) =>
     fetchApi<{ session: InterviewSession; current_turn: InterviewTurn }>("/interview/session", {
@@ -227,6 +288,7 @@ export const api = {
     fetchApi<{
       status: string;
       message: string;
+      original_evaluation: any;
       reassessed_evaluation: any;
     }>(`/interview/turn/${turnId}/dispute`, {
       method: "POST",
@@ -279,11 +341,12 @@ export const api = {
   // Neural TTS
   getTTSVoices: () =>
     fetchApi<Array<{ id: string; name: string; gender: string; style: string; tag: string }>>("/interview/tts/voices"),
-  synthesizeSpeech: async (text: string, voice?: string, rate?: string): Promise<Blob> => {
+  synthesizeSpeech: async (text: string, voice?: string, rate?: string, signal?: AbortSignal): Promise<Blob> => {
     const res = await fetch(`${API_BASE}/interview/tts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, voice: voice || "en-US-ChristopherNeural", rate: rate || "+0%" }),
+      signal,
     });
     if (!res.ok) {
       throw new Error(`TTS synthesis failed with status ${res.status}`);

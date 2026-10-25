@@ -35,7 +35,9 @@ from app.services.web_interview_service import (
     build_interview_blueprint,
     get_next_question_for_turn,
     evaluate_turn_response,
-    generate_interview_debrief
+    generate_interview_debrief,
+    sanitize_turn_for_client,
+    category_key
 )
 
 logger = logging.getLogger(__name__)
@@ -65,8 +67,10 @@ class PrepSetupRequest(BaseModel):
 
 class CreateSessionRequest(BaseModel):
     mode: str = "practice"  # 'realistic' or 'practice'
-    interviewer_style: str = "mixed"  # 'hr', 'technical', 'project_defence', 'mixed'
-    duration_mode: str = "standard"  # 'quick', 'standard', 'full'
+    interviewer_style: str = "mixed"  # 'hr', 'technical', 'project_defence', 'dsa', 'system_design', 'mixed'
+    duration_mode: str = "standard"  # 'quick', 'standard', 'full', 'drill'
+    phase: Optional[str] = None  # 'start_drill', 'phase_1', 'phase_2', 'phase_3', 'phase_4'
+    drill_skill: Optional[str] = None
     custom_categories: Optional[List[str]] = None
 
 class SubmitTurnRequest(BaseModel):
@@ -464,16 +468,34 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         session_id = f"sess_{uuid.uuid4().hex[:12]}"
         confirmed_profile = json.loads(user.get("confirmed_profile_json") or "{}")
 
-        blueprint = build_interview_blueprint(
-            role=user.get("target_role", "Software Engineer"),
-            seniority=user.get("seniority", "Fresher"),
-            duration_mode=body.duration_mode,
-            interviewer_style=body.interviewer_style,
-            confirmed_profile=confirmed_profile
-        )
+        # Safely attempt to retrieve Groq key for dynamic generation
+        groq_key = None
+        try:
+            groq_key = await get_user_groq_key(user["id"])
+        except Exception:
+            pass
+
+        try:
+            blueprint = build_interview_blueprint(
+                role=user.get("target_role", "Software Engineer"),
+                seniority=user.get("seniority", "Fresher"),
+                duration_mode=body.duration_mode,
+                interviewer_style=body.interviewer_style,
+                confirmed_profile=confirmed_profile,
+                phase=body.phase,
+                drill_skill=body.drill_skill
+            )
+        except ValueError as e:
+            # e.g. resume-based interviews without a confirmed profile.
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+        # Stable per-session seed so question rotation varies between sessions
+        # without introducing randomness into a single session.
+        blueprint["session_id"] = session_id
 
         if body.custom_categories:
             blueprint["categories"] = body.custom_categories
+            blueprint["category_keys"] = [category_key(c) for c in body.custom_categories]
 
         session = await db.create_web_interview_session(
             session_id=session_id,
@@ -481,7 +503,7 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             mode=body.mode,
             interviewer_style=body.interviewer_style,
             duration_mode=body.duration_mode,
-            target_role=user.get("target_role", "Software Engineer"),
+            target_role=blueprint.get("target_role", user.get("target_role", "Software Engineer")),
             seniority=user.get("seniority", "Fresher"),
             difficulty=blueprint.get("base_difficulty", "Medium"),
             blueprint=blueprint
@@ -497,7 +519,9 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             turn_index=0,
             previous_turns=[],
             confirmed_profile=confirmed_profile,
-            exclude_question_ids=past_q_ids
+            exclude_question_ids=past_q_ids,
+            api_key=groq_key,
+            target_company=user.get("target_company")
         )
         turn_id = f"turn_{uuid.uuid4().hex[:12]}"
         await db.create_web_interview_turn(
@@ -512,9 +536,13 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         )
 
         turns = await db.get_web_interview_turns(session_id)
+        current_turn = turns[0] if turns else None
+        if current_turn:
+            current_turn = sanitize_turn_for_client(current_turn, is_realistic_mode=(body.mode == "realistic"))
+
         return {
             "session": session,
-            "current_turn": turns[0] if turns else None
+            "current_turn": current_turn
         }
 
     @router.get("/interview/session/{session_id}")
@@ -528,9 +556,11 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         if not session:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
         turns = await db.get_web_interview_turns(session_id)
+        is_realistic_active = session.get("mode") == "realistic" and session.get("status") not in {"completed", "partial_completed"}
+        safe_turns = [sanitize_turn_for_client(t, is_realistic_mode=is_realistic_active) for t in turns]
         return {
             "session": session,
-            "turns": turns
+            "turns": safe_turns
         }
 
     @router.get("/interview/sessions")
@@ -707,6 +737,13 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         if not session:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized access to turn.")
 
+        # Idempotency guard: never evaluate (or bill) the same turn twice.
+        if turn.get("evaluation_status") == "completed":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This turn has already been submitted. Retry it from practice mode instead."
+            )
+
         answer_text = body.corrected_transcript or body.original_transcript or body.typed_answer or ""
         if not answer_text.strip():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Answer cannot be empty.")
@@ -714,15 +751,19 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         confirmed_profile = json.loads(user.get("confirmed_profile_json") or "{}")
 
         # Evaluate Turn Response
-        eval_result = evaluate_turn_response(
-            api_key=groq_key,
-            question_dict=turn,
-            answer_text=answer_text,
-            is_voice=body.is_voice,
-            scratchpad=body.scratchpad_text,
-            confirmed_profile=confirmed_profile,
-            model=settings.GROQ_MODEL
-        )
+        try:
+            eval_result = evaluate_turn_response(
+                api_key=groq_key,
+                question_dict=turn,
+                answer_text=answer_text,
+                is_voice=body.is_voice,
+                scratchpad=body.scratchpad_text,
+                confirmed_profile=confirmed_profile,
+                model=settings.GROQ_MODEL
+            )
+        except GroqServiceError as e:
+            logger.error(f"Turn evaluation failure for {turn_id}: {e}")
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
         await db.update_web_interview_turn(
             turn_id=turn_id,
@@ -753,7 +794,9 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
                 turn_index=len(all_turns),
                 previous_turns=all_turns,
                 confirmed_profile=confirmed_profile,
-                exclude_question_ids=past_q_ids
+                exclude_question_ids=past_q_ids,
+                api_key=groq_key,
+                target_company=user.get("target_company")
             )
             next_turn_id = f"turn_{uuid.uuid4().hex[:12]}"
             await db.create_web_interview_turn(
@@ -766,7 +809,8 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
                 rubric=next_q["rubric"],
                 is_follow_up=next_q.get("is_follow_up", False)
             )
-            next_turn = await db.get_web_interview_turn(next_turn_id)
+            raw_next = await db.get_web_interview_turn(next_turn_id)
+            next_turn = sanitize_turn_for_client(raw_next, is_realistic_mode=(session.get("mode") == "realistic")) if raw_next else None
             await db.update_web_interview_session(session["id"], user["id"], current_turn_index=len(all_turns))
         else:
             # Conclude session
@@ -782,7 +826,10 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         updated_turn = await db.get_web_interview_turn(turn_id)
         return {
             "status": "success",
-            "evaluated_turn": updated_turn,
+            "evaluated_turn": sanitize_turn_for_client(
+                updated_turn,
+                is_realistic_mode=(session.get("mode") == "realistic")
+            ) if updated_turn else None,
             "next_turn": next_turn,
             "is_session_completed": is_completed
         }
@@ -810,17 +857,23 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Retries are only available in Practice Mode.")
 
         answer_text = body.corrected_transcript or body.original_transcript or body.typed_answer or ""
+        if not answer_text.strip():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Answer cannot be empty.")
         confirmed_profile = json.loads(user.get("confirmed_profile_json") or "{}")
 
-        retry_eval = evaluate_turn_response(
-            api_key=groq_key,
-            question_dict=turn,
-            answer_text=answer_text,
-            is_voice=body.is_voice,
-            scratchpad=body.scratchpad_text,
-            confirmed_profile=confirmed_profile,
-            model=settings.GROQ_MODEL
-        )
+        try:
+            retry_eval = evaluate_turn_response(
+                api_key=groq_key,
+                question_dict=turn,
+                answer_text=answer_text,
+                is_voice=body.is_voice,
+                scratchpad=body.scratchpad_text,
+                confirmed_profile=confirmed_profile,
+                model=settings.GROQ_MODEL
+            )
+        except GroqServiceError as e:
+            logger.error(f"Retry evaluation failure for {turn_id}: {e}")
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
 
         history = turn.get("retry_history") or []
         history.append({
@@ -860,24 +913,53 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         if not turn:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Turn not found.")
 
+        session = await db.get_web_interview_session(turn["session_id"], user["id"])
+        if not session:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized access to turn.")
+
+        if turn.get("evaluation_status") != "completed":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Submit an answer for this turn before disputing its feedback."
+            )
+
         current_answer = body.corrected_transcript or turn.get("corrected_transcript") or turn.get("original_transcript") or turn.get("typed_answer") or ""
+        if not (body.clarification or "").strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Explain what was missed or correct your transcript before requesting reassessment."
+            )
+        if not current_answer.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="There is no recorded answer to reassess for this turn."
+            )
+
         augmented_answer = f"{current_answer}\nCandidate clarification: {body.clarification}"
 
         confirmed_profile = json.loads(user.get("confirmed_profile_json") or "{}")
 
-        reassessed = evaluate_turn_response(
-            api_key=groq_key,
-            question_dict=turn,
-            answer_text=augmented_answer,
-            is_voice=bool(turn.get("is_voice")),
-            confirmed_profile=confirmed_profile,
-            model=settings.GROQ_MODEL
-        )
+        try:
+            reassessed = evaluate_turn_response(
+                api_key=groq_key,
+                question_dict=turn,
+                answer_text=augmented_answer,
+                is_voice=bool(turn.get("is_voice")),
+                confirmed_profile=confirmed_profile,
+                model=settings.GROQ_MODEL
+            )
+        except GroqServiceError as e:
+            logger.error(f"Dispute reassessment failure for {turn_id}: {e}")
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e))
+
+        # Preserve the originally shown evaluation at the top level so the client
+        # can always show "what changed" without digging through history.
+        original_evaluation = turn.get("original_evaluation") or turn.get("evaluation")
 
         disputes = turn.get("dispute_history") or []
         disputes.append({
             "clarification": body.clarification,
-            "previous_evaluation": turn.get("evaluation"),
+            "previous_evaluation": original_evaluation,
             "reassessed_evaluation": reassessed,
             "timestamp": time.time()
         })
@@ -892,6 +974,7 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         return {
             "status": "success",
             "message": "Feedback reassessed with candidate clarification.",
+            "original_evaluation": original_evaluation,
             "reassessed_evaluation": reassessed
         }
 

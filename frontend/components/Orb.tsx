@@ -37,22 +37,22 @@ export const Orb: React.FC<OrbProps> = ({ state, size = "lg", volume = 0, classN
   const getStatusLabel = () => {
     switch (state) {
       case "listening":
-        return "Listening to your answer...";
+        return "Listening...";
       case "transcribing":
-        return "Transcribing response...";
+        return "Transcribing...";
       case "thinking":
-        return "Evaluating response & rubric...";
+        return "Evaluating response...";
       case "speaking":
-        return "Interviewer speaking...";
+        return "Speaking...";
       case "paused":
-        return "Session paused";
+        return "Paused";
       case "preflight":
-        return "Connecting neural audio...";
+        return "Connecting...";
       case "error":
-        return "Microphone or audio alert";
+        return "Microphone issue";
       case "idle":
       default:
-        return "Ready — Click Speak when prepared";
+        return "Ready";
     }
   };
 
@@ -149,16 +149,9 @@ export const Orb: React.FC<OrbProps> = ({ state, size = "lg", volume = 0, classN
         </div>
       </div>
 
-      {/* Crisp Status Text */}
-      <div className="mt-4 flex flex-col items-center gap-1">
-        <span className="text-xs font-medium text-[#8E929E] tracking-tight">
-          {getStatusLabel()}
-        </span>
-        {state === "listening" && (
-          <span className="text-[10px] text-emerald-400 font-medium">
-            Audio stream active • Live transcription
-          </span>
-        )}
+      {/* Status Text */}
+      <div className="mt-3 text-xs font-medium text-[#8E929E] tracking-tight">
+        {getStatusLabel()}
       </div>
     </div>
   );

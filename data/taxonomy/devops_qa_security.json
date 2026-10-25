@@ -1,0 +1,142 @@
+[
+  {
+    "id": "devops_cicd_001",
+    "short_title": "Blue-Green vs Canary Deployments",
+    "question": "Compare Blue-Green deployments with Canary deployments in a Kubernetes or cloud environment. What are the key infrastructure trade-offs in terms of cost, traffic routing, database schema migrations, and rollback speed?",
+    "role": "devops_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "trade-off-analysis",
+    "category": "devops_cicd",
+    "primary_skill": "Cloud & CI/CD",
+    "secondary_skills": [
+      "Blue-Green Deployments",
+      "Canary Analysis",
+      "Zero-Downtime DB Migrations"
+    ],
+    "concepts": [
+      "Cloud & CI/CD",
+      "Blue-Green Deployments",
+      "Canary Analysis",
+      "Zero-Downtime DB Migrations",
+      "blue green",
+      "canary",
+      "zero downtime migration"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "devops_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Blue-Green runs two identical production environments; router switches 100% traffic instantly. Fast rollback (switch router back), but doubles idle infrastructure cost. Canary gradually routes a small percentage (e.g. 5% -> 25% -> 100%) to new version while monitoring error rates/latency. Cost-effective and catches issues with real traffic, but takes longer to verify. Both require backward-compatible database schema migrations (Expand-Contract pattern).",
+    "rubric_1_to_5": {
+      "score_1": "Confuses rolling update with canary or cannot explain how traffic is shifted.",
+      "score_3": "Explains the difference between 100% switch vs progressive rollout, but overlooks database migration constraints.",
+      "score_5": "Covers cost vs safety trade-offs, automated canary analysis (metrics/telemetry triggers for rollback), and backward-compatible schema migration (expand and contract)."
+    },
+    "follow_up_directions": [
+      "How does the Expand and Contract (parallel run) pattern work when renaming a database column during zero-downtime deployment?",
+      "How would you implement progressive traffic shifting using an ingress controller like Nginx or Envoy?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "qa_auto_001",
+    "short_title": "Testing Pyramid & Flaky Test Quarantine",
+    "question": "What is the Test Pyramid (Unit, Integration, End-to-End), and why is relying overwhelmingly on End-to-End (E2E) UI tests considered an antipattern in CI/CD pipelines? If a suite of 200 Cypress/Playwright tests has a 10% flaky failure rate, what strategy would you adopt to triage, quarantine, and fix it?",
+    "role": "qa_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "debugging",
+    "category": "qa_automation",
+    "primary_skill": "Test Automation & QA",
+    "secondary_skills": [
+      "Test Pyramid",
+      "Flaky Tests",
+      "CI/CD Reliability"
+    ],
+    "concepts": [
+      "Test Automation & QA",
+      "Test Pyramid",
+      "Flaky Tests",
+      "CI/CD Reliability",
+      "flaky test",
+      "ci reliability"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "qa_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Pyramid: wide base of fast, deterministic Unit tests; middle layer of Integration tests; small top layer of E2E tests. Over-relying on E2E causes slow pipelines, high maintenance cost, fragile tests, and slow feedback loops. Flaky test strategy: 1) Quarantine flaky tests out of merge-blocking CI into a separate non-blocking monitor job. 2) Investigate root causes (arbitrary sleeps vs explicit waits/locators, test state leakage, network race conditions, shared test accounts). 3) Enforce test isolation with clean fixtures/mocking.",
+    "rubric_1_to_5": {
+      "score_1": "Suggests simply adding arbitrary sleep delays or infinite auto-retries in CI.",
+      "score_3": "Knows the pyramid ratios, but lacks a disciplined quarantine and root-cause debugging methodology.",
+      "score_5": "Articulates pyramid cost/speed/determinism trade-offs, identifies asynchronous DOM/network timing bugs as primary flake sources, and outlines a quarantine policy that keeps CI green while fixing root causes."
+    },
+    "follow_up_directions": [
+      "Why is auto-retrying flaky tests in CI dangerous for software reliability?",
+      "How do contract tests (e.g. Pact) bridge the gap between unit tests and heavy end-to-end integration tests?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sec_owasp_001",
+    "short_title": "Preventing SQL Injection & Broken Object Level Authorization (BOLA)",
+    "question": "What is the concrete difference between SQL Injection and Broken Object Level Authorization (BOLA / IDOR)? How does parameterization prevent SQL injection at the protocol/lexer level, and how would you structurally prevent BOLA in an API endpoint like 'GET /api/documents/:id'?",
+    "role": "cybersecurity_engineer",
+    "phase": "foundations",
+    "question_type": "applied-fundamentals",
+    "category": "sec_owasp",
+    "primary_skill": "Application Security",
+    "secondary_skills": [
+      "OWASP Top 10",
+      "SQL Injection",
+      "IDOR / BOLA"
+    ],
+    "concepts": [
+      "Application Security",
+      "OWASP Top 10",
+      "SQL Injection",
+      "IDOR / BOLA",
+      "owasp",
+      "idor",
+      "bola"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "cybersecurity_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "SQL injection alters query syntax because input is concatenated directly into SQL command stream. Parameterization (prepared statements) separates SQL command parsing from data values; parameters are transmitted in a separate binary protocol step and treated purely as literals. BOLA (Broken Object Level Auth) occurs when an endpoint accepts an object ID without verifying that the authenticated user owns or has permission for that object. Fix: Query database with tenant/user scoping: 'SELECT * FROM documents WHERE id = :id AND user_id = :current_user_id', or enforce policy checks in authorization middleware.",
+    "rubric_1_to_5": {
+      "score_1": "Claims that input sanitization via regex is the primary defense against SQL injection, or confuses authentication with object authorization.",
+      "score_3": "Explains prepared statements, but cannot describe how BOLA occurs or how to enforce tenant scoping.",
+      "score_5": "Deeply explains AST/lexer command vs data separation in prepared statements, and demonstrates data-layer tenant/user scoping to prevent IDOR/BOLA."
+    },
+    "follow_up_directions": [
+      "Why does using UUIDs instead of auto-incrementing integers reduce IDOR enumeration risks without actually solving authorization?",
+      "What is Cross-Site Scripting (XSS), and how does Content Security Policy (CSP) mitigate it?"
+    ],
+    "version": "2026.1"
+  }
+]

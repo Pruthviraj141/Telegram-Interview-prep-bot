@@ -1,0 +1,140 @@
+[
+  {
+    "id": "ds_sql_001",
+    "short_title": "SQL Window Functions & Running Totals",
+    "question": "Suppose you have an 'orders' table with columns: 'order_id', 'user_id', 'amount', and 'order_date'. How would you write a SQL query to compute each user's running total spend over time, and also identify their 2nd most expensive order? Explain the difference between ROW_NUMBER(), RANK(), and DENSE_RANK().",
+    "role": "data_scientist",
+    "phase": "applied_problem_solving",
+    "question_type": "problem-solving",
+    "category": "sql",
+    "primary_skill": "Advanced SQL",
+    "secondary_skills": [
+      "Window Functions",
+      "CTEs",
+      "Ranking Functions"
+    ],
+    "concepts": [
+      "Advanced SQL",
+      "Window Functions",
+      "CTEs",
+      "Ranking Functions",
+      "window function",
+      "cte",
+      "ranking"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://leetcode.com/discuss/post/7733706/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "data_scientist",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Running total: SUM(amount) OVER (PARTITION BY user_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW). 2nd highest order: use a CTE with DENSE_RANK() OVER (PARTITION BY user_id ORDER BY amount DESC) as rnk, then filter WHERE rnk = 2. Difference: ROW_NUMBER() assigns strictly unique integers (1, 2, 3), RANK() skips ranks on ties (1, 2, 2, 4), DENSE_RANK() does not skip ranks on ties (1, 2, 2, 3).",
+    "rubric_1_to_5": {
+      "score_1": "Attempts correlated subqueries or self-joins without knowing SQL window functions exist.",
+      "score_3": "Writes window query but confuses RANK() vs DENSE_RANK() tie-breaking behavior, or omits frame specification on SUM.",
+      "score_5": "Accurately articulates PARTITION BY vs ORDER BY in window functions, explains window frame defaults (RANGE vs ROWS), and explains exactly which ranking function handles duplicate prices correctly."
+    },
+    "follow_up_directions": [
+      "Why does omitting 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW' in PostgreSQL cause identical timestamps to sum together?",
+      "How would you optimize this query if the orders table has 500 million rows?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "ds_abtest_001",
+    "short_title": "A/B Testing: Conversion Spikes & Sanity Checks",
+    "question": "A redesigned checkout flow in an A/B test shows a statistically significant 14% increase in conversion rate after just 3 days (p < 0.01). What statistical and practical checks would you perform before recommending a full rollout to 100% of users?",
+    "role": "data_scientist",
+    "phase": "applied_problem_solving",
+    "question_type": "data-interpretation",
+    "category": "ab_testing",
+    "primary_skill": "Experimentation & A/B Testing",
+    "secondary_skills": [
+      "Sample Ratio Mismatch",
+      "Peeking Problem",
+      "Novelty Effect"
+    ],
+    "concepts": [
+      "Experimentation & A/B Testing",
+      "Sample Ratio Mismatch",
+      "Peeking Problem",
+      "Novelty Effect",
+      "peeking"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://leetcode.com/discuss/post/7733706/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "data_scientist",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "1) Check Sample Ratio Mismatch (SRM) via Chi-Square goodness-of-fit test on traffic allocation (e.g. 50/50 split). If SRM fails, experiment is corrupted. 2) Peeking problem: stopping early because p < 0.01 inflates Type I error (false positives). Need pre-calculated sample size or sequential testing (always-valid p-values). 3) Novelty effect / day-of-week seasonality (test must run at least 1-2 full business cycles, e.g. 7-14 days). 4) Guardrail metrics: refund rate, server errors, page load latency, customer complaints.",
+    "rubric_1_to_5": {
+      "score_1": "Advises rolling out immediately based purely on p < 0.01 after 3 days.",
+      "score_3": "Mentions sample size and running longer for weekly seasonality, but unaware of SRM or peeking bias.",
+      "score_5": "Identifies Sample Ratio Mismatch (SRM) with Chi-Square, explains optional stopping / peeking bias, accounts for novelty effects, and checks guardrail business metrics."
+    },
+    "follow_up_directions": [
+      "What is Simpson's Paradox, and how could it cause a feature to look positive overall while being negative in every subgroup?",
+      "How does statistical power relate to minimum detectable effect (MDE) and required sample size?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "ds_stats_001",
+    "short_title": "Interpreting P-Values, Effect Size & Confidence Intervals",
+    "question": "How would you explain the exact definition of a p-value to a non-technical product manager? Why does having a statistically significant p-value (p < 0.05) not necessarily mean the feature provides meaningful business value, and why are confidence intervals more informative?",
+    "role": "data_scientist",
+    "phase": "foundations",
+    "question_type": "applied-fundamentals",
+    "category": "stats",
+    "primary_skill": "Applied Statistics",
+    "secondary_skills": [
+      "Hypothesis Testing",
+      "P-Values",
+      "Effect Size"
+    ],
+    "concepts": [
+      "Applied Statistics",
+      "Hypothesis Testing",
+      "P-Values",
+      "Effect Size",
+      "p value",
+      "hypothesis test"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "data_scientist",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "P-value is the probability of observing data as extreme or more extreme than what was measured, assuming the null hypothesis (no true effect) is true. It is NOT the probability that the null hypothesis is true. With massive sample sizes (e.g. 10 million users), a trivial lift of 0.001% can achieve p < 0.001, but cost more to maintain than it generates. Confidence intervals show both the point estimate and the plausible range of effect size.",
+    "rubric_1_to_5": {
+      "score_1": "Defines p-value incorrectly as 'the probability that the hypothesis is false' or 'the probability that results are due to chance'.",
+      "score_3": "Defines p-value conditioned on the null hypothesis, but struggles to explain why statistical significance diverges from practical significance.",
+      "score_5": "Provides accurate frequentist definition, clearly contrasts statistical significance with practical/economic significance, and explains how confidence intervals communicate magnitude and uncertainty."
+    },
+    "follow_up_directions": [
+      "What is the Bonferroni correction, and why must you adjust p-values when testing multiple metrics simultaneously?",
+      "What is the difference between Type I error (alpha) and Type II error (beta)?"
+    ],
+    "version": "2026.1"
+  }
+]

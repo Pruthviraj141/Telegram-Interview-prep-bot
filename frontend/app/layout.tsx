@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Interview Coach — Voice Studio & Placement Prep",
-  description: "Master technical and behavioral interviews with real-time AI voice simulations, adaptive rubrics, and automated debriefs.",
+  title: "AI Interview Coach",
+  description: "Real-time AI voice interview practice with adaptive feedback.",
 };
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#F4F1EA",
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

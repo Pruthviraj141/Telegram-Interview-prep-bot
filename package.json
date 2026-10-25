@@ -1,0 +1,11 @@
+{
+  "name": "telegram-interview-prep",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev -- -H 0.0.0.0 -p 3000",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend start -- -H 0.0.0.0 -p 3000",
+    "server": "PYTHONPATH=. .venv/bin/python run_web.py --host 0.0.0.0"
+  }
+}

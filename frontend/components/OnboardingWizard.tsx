@@ -147,7 +147,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
           {stepsMeta.map((s) => (
             <div key={s.num} className="space-y-1">
               <div className="text-[10px] sm:text-[11px] font-semibold tracking-tight text-slate-700">
-                <span className={cn(step === s.num ? "text-[#20232C] font-bold" : "text-slate-400")}>
+                <span className={cn(step === s.num ? "text-[#202124] font-bold" : "text-slate-400")}>
                   <span className="sm:hidden">{s.short}</span>
                   <span className="hidden sm:inline">{s.label}</span>
                 </span>
@@ -155,7 +155,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
               <div
                 className={cn(
                   "h-1 rounded-full transition-all duration-300",
-                  step >= s.num ? "bg-[#20232C]" : "bg-slate-200"
+                  step >= s.num ? "bg-[#202124]" : "bg-slate-200"
                 )}
               />
             </div>
@@ -172,12 +172,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
 
       {/* Step 1: Groq Key Setup */}
       {step === 1 && (
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
             <Key className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Connect Groq API Key</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#202124]">Connect Groq API Key</h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
               To provide turn-by-turn voice interviews and private rubric evaluation without token limits,
               the coach uses your own Groq key. It is validated against Groq, encrypted at rest using
@@ -196,7 +196,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 placeholder="gsk_..."
                 value={groqKey}
                 onChange={(e) => setGroqKey(e.target.value)}
-                className="w-full px-3.5 py-3 border border-slate-300 rounded-xl text-base sm:text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-3 border border-[#E6E6E4] rounded-xl text-base sm:text-xs font-mono text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
               <span className="block mt-2 text-[11px] text-slate-500">
                 Obtain a free key at{" "}
@@ -204,14 +204,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                   href="https://console.groq.com/keys"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[#4F46E5] hover:underline font-semibold"
+                  className="text-[#B3582A] hover:underline font-semibold"
                 >
                   console.groq.com/keys
                 </a>
               </span>
             </div>
 
-            <div className="p-3.5 bg-[#FAFAF8] rounded-2xl border border-[#E8E5DD] flex items-center gap-3 text-xs text-slate-600">
+            <div className="p-3.5 bg-[#F7F7F5] rounded-2xl border border-[#E6E6E4] flex items-center gap-3 text-xs text-slate-600">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Encrypted at rest: Plaintext keys are never logged or exposed.</span>
             </div>
@@ -219,7 +219,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
             <button
               type="submit"
               disabled={loading || !groqKey.trim()}
-              className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
+              className="w-full py-3.5 px-6 bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <>
@@ -239,12 +239,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
 
       {/* Step 2: Resume Upload */}
       {step === 2 && (
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Upload Candidate Resume</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#202124]">Upload Candidate Resume</h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
               Every interview simulates real hiring panels. Our local parser extracts your actual projects, claimed skills,
               and experience so Project Defence questions probe authentic engineering claims.
@@ -252,7 +252,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
           </div>
 
           <form onSubmit={handleResumeUpload} className="space-y-4 sm:space-y-5">
-            <div className="border border-dashed border-slate-300 hover:border-slate-400 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center transition bg-[#FAFAF8]">
+            <div className="border border-dashed border-[#E6E6E4] hover:border-slate-400 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center transition bg-[#F7F7F5]">
               <Upload className="w-7 h-7 text-slate-400 mx-auto mb-2" />
               <p className="text-xs font-semibold text-slate-800 mb-1">
                 {resumeFile ? resumeFile.name : "Select PDF or DOCX resume document"}
@@ -271,7 +271,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
               />
               <label
                 htmlFor="resume-file"
-                className="inline-block py-2.5 px-4 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 text-xs font-semibold rounded-xl cursor-pointer transition shadow-xs min-h-[40px]"
+                className="inline-block py-2.5 px-4 bg-white border border-[#E6E6E4] hover:border-slate-400 text-slate-800 text-xs font-semibold rounded-xl cursor-pointer transition shadow-xs min-h-[40px]"
               >
                 Browse File
               </label>
@@ -280,7 +280,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
             <button
               type="submit"
               disabled={loading || !resumeFile}
-              className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
+              className="w-full py-3.5 px-6 bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <>
@@ -300,12 +300,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
 
       {/* Step 3: Review Extracted Profile */}
       {step === 3 && extractedProfile && (
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Verify Extracted Profile</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#202124]">Verify Extracted Profile</h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
               Review the skills and projects extracted from your resume. You can edit any details below before they become your interview context.
             </p>
@@ -322,7 +322,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 onChange={(e) =>
                   setExtractedProfile({ ...extractedProfile, primary_role: e.target.value })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
 
@@ -339,7 +339,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     programming_languages: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
 
@@ -356,7 +356,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     frameworks_and_tools: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
 
@@ -373,7 +373,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                     notable_projects: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C] resize-none"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124] resize-none"
               />
             </div>
           </div>
@@ -381,7 +381,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
           <button
             onClick={handleProfileConfirm}
             disabled={loading}
-            className="w-full py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm cursor-pointer min-h-[44px]"
+            className="w-full py-3.5 px-6 bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm cursor-pointer min-h-[44px]"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Confirm Profile & Continue"}
           </button>
@@ -390,12 +390,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
 
       {/* Step 4: Placement Preparation Setup */}
       {step === 4 && (
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
-          <div className="w-10 h-10 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-10 shadow-xs space-y-5 sm:space-y-6">
+          <div className="w-10 h-10 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#20232C]">Set Placement Goals</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#202124]">Set Placement Goals</h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mt-1.5 sm:mt-2">
               Tell us your target role and timeline. We will calibrate interview difficulty and construct your adaptive preparation roadmap.
             </p>
@@ -412,7 +412,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
                 placeholder="e.g. Backend Software Engineer"
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
 
@@ -425,7 +425,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 value={targetCompany}
                 onChange={(e) => setTargetCompany(e.target.value)}
                 placeholder="e.g. Google, Amazon, TCS, or Campus Drive"
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
 
@@ -437,7 +437,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 <select
                   value={seniority}
                   onChange={(e) => setSeniority(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 bg-white"
+                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] bg-white"
                 >
                   <option value="Intern / Fresher">Intern / Fresher</option>
                   <option value="Junior (1-2 yrs)">Junior (1-2 yrs)</option>
@@ -452,7 +452,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
                 <select
                   value={interviewType}
                   onChange={(e) => setInterviewType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs text-slate-900 bg-white"
+                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] bg-white"
                 >
                   <option value="dsa">DSA & Coding Patterns</option>
                   <option value="system_design">System Architecture</option>
@@ -466,7 +466,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ initialUser,
             <button
               type="submit"
               disabled={loading || !targetRole.trim()}
-              className="w-full mt-3 sm:mt-4 py-3.5 px-6 bg-[#20232C] hover:bg-black text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
+              className="w-full mt-3 sm:mt-4 py-3.5 px-6 bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
               {loading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />

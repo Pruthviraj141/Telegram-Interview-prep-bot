@@ -1,0 +1,142 @@
+[
+  {
+    "id": "beh_star_001",
+    "short_title": "Project Failure & Ownership Under Pressure",
+    "question": "Tell me about a technical project or academic assignment where things went significantly wrong close to a deadline. What was the root issue, what did you personally do to triage and resolve it, what trade-offs did you make, and what did you change about your process afterward?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_failure",
+    "primary_skill": "Ownership & Accountability",
+    "secondary_skills": [
+      "STAR Method",
+      "Failure Recovery",
+      "Reflective Learning"
+    ],
+    "concepts": [
+      "Ownership & Accountability",
+      "STAR Method",
+      "Failure Recovery",
+      "Reflective Learning",
+      "star",
+      "failure",
+      "ownership"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Candidate uses STAR (Situation, Task, Action, Result). Focuses on their personal ownership ('I did' rather than passive 'we did'). Clear articulation of the technical roadblock, realistic triage trade-off (e.g. cutting scope vs shipping hotfix vs communicating early), measurable outcome, and mature reflection on how they adjusted their testing, estimation, or communication going forward.",
+    "rubric_1_to_5": {
+      "score_1": "Blames teammates or tools, denies that anything went wrong, or presents a fake weakness without genuine reflection.",
+      "score_3": "Describes a real setback using STAR structure, but focuses heavily on team actions rather than their personal technical contribution and specific trade-offs.",
+      "score_5": "Demonstrates high ownership: candidly describes root failure, specifies their technical actions and prioritization under pressure, quantifies outcome, and explains preventative mechanisms instituted afterward."
+    },
+    "follow_up_directions": [
+      "If you had to do that project over from day one with the same constraints, what would you design or communicate differently?",
+      "How did you manage expectations with stakeholders or teammates when you realized the deadline was at risk?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_star_002",
+    "short_title": "Technical Disagreement & Constructive Resolution",
+    "question": "Describe a situation where you had a strong technical disagreement with a team member, peer, or lead regarding an architectural choice, tech stack, or implementation detail. How did you present your case, how did you evaluate their perspective, and what was the ultimate resolution?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_collaboration",
+    "primary_skill": "Collaboration & Teamwork",
+    "secondary_skills": [
+      "Technical Communication",
+      "Conflict Resolution",
+      "Disagree and Commit"
+    ],
+    "concepts": [
+      "Collaboration & Teamwork",
+      "Technical Communication",
+      "Conflict Resolution",
+      "Disagree and Commit",
+      "conflict",
+      "collaboration"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Uses STAR method. Objective framing of the dispute using evidence (benchmarks, latency, maintainability, team familiarity) rather than emotional argumentation. Listening actively to the opposing viewpoint. Shows ability to reach a compromise, run a proof of concept (POC), or 'disagree and commit' to keep momentum.",
+    "rubric_1_to_5": {
+      "score_1": "Describes a personal personality clash rather than a technical trade-off, or claims they forced the other person to concede.",
+      "score_3": "Describes a technical debate resolved by voting or manager intervention, but lacks evidence-driven arguments.",
+      "score_5": "Highlights data-driven decision making (proof of concept, trade-off matrix), respectful active listening, and exemplary professional alignment around project goals."
+    },
+    "follow_up_directions": [
+      "What would you do if you still disagreed with the chosen approach, but the team decided to move forward with it?",
+      "How did you ensure the relationship with your peer remained healthy after the decision?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_deep_001",
+    "short_title": "Project Architecture, Scaling & Bottleneck Defence",
+    "question": "Choose the most technically challenging project on your resume that you built or contributed to. Walk me through the high-level architecture: what was the hardest technical decision you made, what alternative did you reject and why, and what was the primary performance or scalability bottleneck?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_deep_dive",
+    "primary_skill": "Project Architecture & Ownership",
+    "secondary_skills": [
+      "Trade-off Analysis",
+      "Bottleneck Diagnosis",
+      "Resume Defence"
+    ],
+    "concepts": [
+      "Project Architecture & Ownership",
+      "Trade-off Analysis",
+      "Bottleneck Diagnosis",
+      "Resume Defence",
+      "trade off",
+      "bottleneck",
+      "architecture decision"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Candidate discusses their actual project: explains component interaction, articulates a concrete trade-off (e.g. Postgres vs MongoDB, REST vs WebSockets, synchronous vs message queue), justifies the decision based on actual requirements, identifies where the system would fail first under 10x traffic, and discusses measurements/profiling.",
+    "rubric_1_to_5": {
+      "score_1": "Superficial recap of resume bullet points; unable to explain why choices were made or what alternatives existed.",
+      "score_3": "Explains the system flow and features well, but has difficulty identifying realistic bottlenecks or quantifying performance.",
+      "score_5": "Deeply commands their own codebase: justifies architectural choices with concrete pros/cons, explains data flows, profiles bottlenecks honestly, and discusses how they would re-architect for scale."
+    },
+    "follow_up_directions": [
+      "If concurrent users increased from 100 to 50,000, which specific component would saturate or fail first, and how would you verify that?",
+      "What was the most difficult bug you encountered during development of this project, and how did you isolate it?"
+    ],
+    "version": "2026.1"
+  }
+]

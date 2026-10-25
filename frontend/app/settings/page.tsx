@@ -91,32 +91,28 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#20232C] flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans">
       <Navbar user={user} />
 
       <main className="flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E5DD] text-[#20232C] text-xs font-semibold tracking-tight mb-2.5 shadow-xs">
-            <SettingsIcon className="w-3.5 h-3.5 text-[#4F46E5]" />
-            <span>Preferences & BYOK Security</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-[#20232C]">
-            Settings & Privacy
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
+            Settings
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-2xl leading-relaxed">
-            Manage your Groq API credentials, connect your Telegram bot, and exercise candidate data rights.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Manage your Groq API key, Telegram companion, and data privacy.
           </p>
         </div>
 
         {/* Groq Key Card */}
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#F4F1EA]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E6E6E4]">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+              <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
                 <Key className="w-4 h-4" />
               </div>
-              <h2 className="text-xs sm:text-sm font-semibold text-[#20232C]">
-                Groq API Key (Encrypted at Rest)
+              <h2 className="text-xs sm:text-sm font-semibold text-[#202124]">
+                Groq API Key
               </h2>
             </div>
             {user?.groq_key_configured && (
@@ -127,7 +123,7 @@ export default function SettingsPage() {
           </div>
 
           <p className="text-xs text-slate-600 leading-relaxed">
-            Your Groq key powers turn-by-turn voice interviews and answer evaluation. Plaintext keys are encrypted using Fernet cryptography and never returned to the browser.
+            Your API key powers real-time speech and evaluation models. Keys are encrypted at rest.
           </p>
 
           {keySuccess && (
@@ -147,26 +143,26 @@ export default function SettingsPage() {
                 placeholder="gsk_..."
                 value={newKey}
                 onChange={(e) => setNewKey(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-base sm:text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#20232C]"
+                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#202124]"
               />
             </div>
             <button
               type="submit"
               disabled={keyUpdating || !newKey.trim()}
-              className="w-full sm:w-auto px-5 py-2.5 bg-[#20232C] hover:bg-black text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 cursor-pointer min-h-[44px]"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 cursor-pointer min-h-[44px]"
             >
-              {keyUpdating ? "Validating & Encrypting..." : "Update Groq Key"}
+              {keyUpdating ? "Saving Key..." : "Update Groq Key"}
             </button>
           </form>
         </div>
 
         {/* Telegram Linking Card */}
-        <div className="bg-white border border-[#E8E5DD] rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-[#F4F1EA]">
-            <div className="w-8 h-8 rounded-xl bg-[#FAFAF8] border border-[#E8E5DD] flex items-center justify-center text-[#20232C]">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+          <div className="flex items-center gap-2.5 pb-3 border-b border-[#E6E6E4]">
+            <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
               <Send className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-semibold text-[#20232C]">
+            <h2 className="text-sm font-semibold text-[#202124]">
               Telegram Bot Companion Link
             </h2>
           </div>
@@ -184,18 +180,18 @@ export default function SettingsPage() {
           ) : (
             <div>
               {linkCode ? (
-                <div className="p-5 bg-[#FAFAF8] border border-[#E8E5DD] rounded-2xl space-y-2">
+                <div className="p-5 bg-[#F7F7F5] border border-[#E6E6E4] rounded-2xl space-y-2">
                   <div className="text-[11px] text-slate-500 font-medium">Your 10-Minute One-Time Code:</div>
-                  <div className="text-3xl font-mono font-bold text-[#20232C] tracking-widest">{linkCode}</div>
+                  <div className="text-3xl font-mono font-bold text-[#202124] tracking-widest">{linkCode}</div>
                   <p className="text-xs text-slate-600">
-                    Open your Telegram bot and send: <code className="bg-white px-2 py-0.5 rounded-lg border border-[#E8E5DD] font-bold text-[#20232C]">/link {linkCode}</code>
+                    Open your Telegram bot and send: <code className="bg-white px-2 py-0.5 rounded-lg border border-[#E6E6E4] font-bold text-[#202124]">/link {linkCode}</code>
                   </p>
                 </div>
               ) : (
                 <button
                   onClick={handleGenerateLinkCode}
                   disabled={codeLoading}
-                  className="px-5 py-2.5 bg-[#20232C] hover:bg-black text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-50 cursor-pointer min-h-[38px]"
+                  className="px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-50 cursor-pointer min-h-[38px]"
                 >
                   {codeLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                   <span>Generate Link Code</span>
@@ -209,7 +205,7 @@ export default function SettingsPage() {
         <TTSComponent />
 
         {/* Data Privacy & Permanent Deletion */}
-        <div className="bg-white border border-rose-200/80 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+        <div className="bg-white border border-rose-200/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
           <div className="flex items-center gap-2.5 pb-3 border-b border-rose-100">
             <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-700">
               <Trash2 className="w-4 h-4" />

@@ -2,16 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { InterviewStudio } from "@/components/InterviewStudio";
 import { api, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
+import { speechSynth } from "@/lib/speech";
+import { getErrorMessage } from "@/lib/utils";
 import {
   Mic,
   ShieldCheck,
-  Sparkles,
   ArrowRight,
-  Play,
-  RotateCcw,
   CheckCircle2,
   RefreshCw,
   AlertCircle
@@ -22,7 +22,8 @@ function InterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultStyle = searchParams.get("style") || "mixed";
-
+  const phaseParam = searchParams.get("phase") || "";
+  const drillParam = searchParams.get("drill") || "";
 
   const [user, setUser] = useState<CandidateUser | null>(null);
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
@@ -31,12 +32,30 @@ function InterviewContent() {
   const [starting, setStarting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Setup form
-  const [mode, setMode] = useState<"practice" | "realistic">("practice");
-  const [interviewerStyle, setInterviewerStyle] = useState<string>(defaultStyle);
-  const [durationMode, setDurationMode] = useState<string>("standard");
+  // Setup form with phase / drill awareness
+  const initialMode = phaseParam === "phase_4" ? "realistic" : "practice";
+  const initialDuration = drillParam ? "drill" : phaseParam === "phase_1" ? "quick" : "standard";
+
+  let initialStyle = defaultStyle;
+  if (drillParam === "aiml" || defaultStyle === "aiml") initialStyle = "aiml";
+  else if (drillParam === "dsa") initialStyle = "dsa";
+  else if (drillParam === "system_design") initialStyle = "system_design";
+  else if (drillParam === "project_defence") initialStyle = "project_defence";
+  else if (drillParam === "hr") initialStyle = "hr";
+  else if (phaseParam === "phase_1") initialStyle = "technical";
+  else if (phaseParam === "phase_2") initialStyle = "dsa";
+  else if (phaseParam === "phase_3") initialStyle = "project_defence";
+  else if (phaseParam === "phase_4") initialStyle = "mixed";
+
+  const [mode, setMode] = useState<"practice" | "realistic">(initialMode);
+  const [interviewerStyle, setInterviewerStyle] = useState<string>(initialStyle);
+  const [durationMode, setDurationMode] = useState<string>(initialDuration);
   const [hasConsented, setHasConsented] = useState<boolean>(false);
   const [consentModalOpen, setConsentModalOpen] = useState<boolean>(false);
+  // Resume Deep-Dive is only usable when a confirmed profile with at least one
+  // project exists; the backend rejects the style otherwise instead of
+  // inventing projects.
+  const [hasConfirmedProfile, setHasConfirmedProfile] = useState<boolean>(false);
 
   useEffect(() => {
     async function init() {
@@ -46,16 +65,68 @@ function InterviewContent() {
         setUser(u);
         const consentRes = await api.checkConsent();
         setHasConsented(consentRes.has_consented);
-      } catch (err: any) {
-        setError(err.message || "Failed to load user session.");
+
+        let profileConfirmed = false;
+        try {
+          const resumeRes = await api.getResume();
+          const confirmed = resumeRes?.confirmed_profile;
+          profileConfirmed = Boolean(
+            confirmed &&
+              Array.isArray(confirmed.notable_projects) &&
+              confirmed.notable_projects.length > 0
+          );
+        } catch {
+          // No resume on file is a normal state, not an error worth blocking on.
+          profileConfirmed = false;
+        }
+        setHasConfirmedProfile(profileConfirmed);
+        if (!profileConfirmed) {
+          // Never leave the form on a style that would be rejected by the API.
+          setInterviewerStyle((prev) => (prev === "resume" ? "mixed" : prev));
+        }
+
+        const resumeId = searchParams.get("resume");
+        if (resumeId) {
+          try {
+            const sessRes = await api.getInterviewSession(resumeId);
+            const sess = sessRes?.session;
+            if (sess) {
+              // Finished rounds belong in the debrief, not the studio.
+              if (sess.status === "completed" || sess.status === "partial_completed") {
+                router.replace(`/interview/${resumeId}/debrief`);
+                return;
+              }
+              const turns = sessRes.turns || [];
+              const pendingTurn = [...turns]
+                .reverse()
+                .find((t) => t.evaluation_status !== "completed");
+              if (pendingTurn) {
+                setActiveSession(sess);
+                setCurrentTurn(pendingTurn);
+              } else {
+                // Every turn is scored but the round was never closed.
+                setError(
+                  "This round has no open question left. Open the debrief to review it, or start a new round."
+                );
+              }
+            }
+          } catch (e: unknown) {
+            setError(getErrorMessage(e, "Could not resume that interview session."));
+          }
+        }
+      } catch (err: unknown) {
+        setError(getErrorMessage(err, "Failed to load user session."));
       } finally {
         setLoading(false);
       }
     }
     init();
-  }, []);
+  }, [searchParams, router]);
 
   const handleStartSession = async () => {
+    // Prime browser audio context right upon click gesture
+    speechSynth.unlockAudio();
+
     if (!hasConsented) {
       setConsentModalOpen(true);
       return;
@@ -68,11 +139,13 @@ function InterviewContent() {
         mode,
         interviewer_style: interviewerStyle,
         duration_mode: durationMode,
+        phase: phaseParam || undefined,
+        drill_skill: drillParam || undefined,
       });
       setActiveSession(res.session);
       setCurrentTurn(res.current_turn);
-    } catch (err: any) {
-      setError(err.message || "Failed to initialize interview studio session.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to initialize interview studio session."));
     } finally {
       setStarting(false);
     }
@@ -84,15 +157,15 @@ function InterviewContent() {
       setHasConsented(true);
       setConsentModalOpen(false);
       await handleStartSession();
-    } catch (err: any) {
+    } catch {
       setError("Failed to record consent.");
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] text-[#20232C] flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-5 h-5 text-[#20232C] animate-spin" />
+      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
         <span className="text-xs font-semibold text-slate-500 tracking-tight">
           Loading Interview Studio...
         </span>
@@ -106,21 +179,49 @@ function InterviewContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#20232C] flex flex-col font-sans selection:bg-[#4F46E5]/10 selection:text-[#4F46E5]">
+    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans selection:bg-[#FAF2ED] selection:text-[#B3582A]">
       <Navbar user={user} />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-6 py-6 sm:py-12 pb-24 md:pb-12">
-        {/* Header Breadcrumb & Title */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-6 py-6 sm:py-10 pb-24 md:pb-12">
+        {/* Header Title */}
         <div className="mb-6 sm:mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E8E5DD] text-[#20232C] text-xs font-semibold tracking-tight mb-2.5 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#4F46E5]" />
-            <span>Voice Interview Studio</span>
+          <div className="flex items-center gap-2 mb-2">
+            {drillParam && (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#FAF2ED] border border-[#EED9CC] text-[#B3582A] text-[11px] font-bold uppercase tracking-wider">
+                Focused Skill Drill
+              </span>
+            )}
+            {phaseParam && (
+              <span className="px-2.5 py-0.5 rounded-full bg-[#202124] text-white text-[11px] font-bold uppercase tracking-wider">
+                {phaseParam.replace("_", " ").toUpperCase()}
+              </span>
+            )}
           </div>
-          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-[#20232C]">
-            Configure Your Interview Round
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
+            {drillParam
+              ? `Focused Drill: ${drillParam.replace("_", " ").toUpperCase()}`
+              : phaseParam === "phase_1"
+              ? "Phase 1: Core Technical Foundations"
+              : phaseParam === "phase_2"
+              ? "Phase 2: Applied Problem-Solving & Coding"
+              : phaseParam === "phase_3"
+              ? "Phase 3: Project Architecture & Defence"
+              : phaseParam === "phase_4"
+              ? "Phase 4: Realistic Full Mock Panel"
+              : "Start a Practice Round"}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1.5 max-w-2xl leading-relaxed">
-            Select your target focus area, simulation depth, and interview mode. Every session randomly samples distinct problems and remembers your past questions to never repeat.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+            {drillParam
+              ? "A short, focused 2-question session targeting this specific skill area with instant calibrated feedback."
+              : phaseParam === "phase_1"
+              ? "Assess essential programming knowledge, language internals, and baseline role-specific concepts."
+              : phaseParam === "phase_2"
+              ? "Test coding, algorithms, practical debugging, and reasoning under real constraints."
+              : phaseParam === "phase_3"
+              ? "Deep dive into your resume projects, design decisions, failure handling, and trade-offs."
+              : phaseParam === "phase_4"
+              ? "Full timed simulation combining technical, architectural, and behavioral questions with a comprehensive debrief."
+              : "Pick a topic, choose whether you want instant coaching, and practice speaking your answers out loud."}
           </p>
         </div>
 
@@ -132,116 +233,144 @@ function InterviewContent() {
         )}
 
         {/* Configuration Card */}
-        <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-4 sm:p-9 shadow-xs space-y-7 sm:space-y-9">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xs space-y-6 sm:space-y-7">
           {/* Candidate Profile Context Banner */}
           {user && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#FAFAF8] border border-[#E8E5DD] text-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white border border-[#E8E5DD] flex items-center justify-center font-bold text-[#20232C] shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF2ED] border border-[#EED9CC] flex items-center justify-center font-bold text-[#B3582A] text-xs shadow-xs">
                   {(user.display_name || user.email || "C")[0].toUpperCase()}
                 </div>
-                <div>
-                  <div className="font-semibold text-[#20232C]">
-                    Candidate Profile: {user.target_role || "Software Engineer"}
-                  </div>
-                  <div className="text-slate-500 text-[11px]">
-                    Target: <span className="font-medium text-slate-700">{user.target_company || "General Tech"}</span> • Onboarding: <span className="font-medium text-slate-700">{user.onboarding_state}</span>
-                  </div>
+                <div className="text-slate-600">
+                  <span className="font-semibold text-[#202124]">{user.target_role || "Software Engineer"}</span>
+                  <span className="text-slate-400 mx-1.5">•</span>
+                  <span>{user.target_company || "General Tech"}</span>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => router.push("/profile")}
-                className="text-[11px] font-semibold text-[#5967F2] hover:text-[#4351DB] transition underline underline-offset-2 self-start sm:self-auto"
+              <Link
+                href="/resume"
+                className="text-[11px] font-semibold text-[#B3582A] hover:text-[#C4744B] transition self-start sm:self-auto"
               >
-                Change Role in Profile
-              </button>
+                Edit profile
+              </Link>
             </div>
           )}
 
-          {/* Section 1: Focus Track (Interviewer Style) */}
-          <div className="space-y-3.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-                1. Select Interview Focus Track
-              </label>
-              <span className="text-[11px] text-slate-400">
-                Randomized non-repeating questions
-              </span>
-            </div>
+          {/* Section 1: Focus Track */}
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-slate-700">
+              Focus Track
+            </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
+                {
+                  id: "aiml",
+                  title: "AI/ML & Agentic Systems",
+                  desc: "RAG pipelines, LangGraph, agent planning, PyTorch, and LLM evals.",
+                  badge: "AI/ML",
+                  requiresProfile: false,
+                },
                 {
                   id: "dsa",
                   title: "DSA & Coding Drill",
-                  desc: "Algorithms, arrays, linked lists, trees, graphs, DP & complexity trade-offs.",
-                  badge: "LeetCode Style",
-                  badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200/60",
+                  desc: "Arrays, trees, graphs, DP, and algorithmic complexity.",
+                  badge: "Coding",
+                  requiresProfile: false,
                 },
                 {
                   id: "system_design",
                   title: "System Architecture",
-                  desc: "High-level design, database caching, horizontal scaling & microservices.",
-                  badge: "Architecture",
-                  badgeColor: "bg-blue-50 text-blue-700 border-blue-200/60",
+                  desc: "Distributed caching, databases, and scalability trade-offs.",
+                  badge: "Design",
+                  requiresProfile: false,
                 },
                 {
                   id: "technical",
                   title: "Core CS Fundamentals",
-                  desc: "Balanced CS drill: DBMS/SQL, Operating Systems, OOP concepts & networking.",
-                  badge: "Technical",
-                  badgeColor: "bg-purple-50 text-purple-700 border-purple-200/60",
+                  desc: "Operating systems, DBMS, SQL, OOP, and networks.",
+                  badge: "CS Core",
+                  requiresProfile: false,
                 },
                 {
                   id: "project_defence",
                   title: "Project Defence",
-                  desc: "Deep-dive inquiry into your projects, technical decisions & failure handling.",
-                  badge: "Resume Based",
-                  badgeColor: "bg-amber-50 text-amber-700 border-amber-200/60",
+                  desc: "Architectural choices, failure handling, and trade-offs.",
+                  badge: "Projects",
+                  requiresProfile: false,
                 },
                 {
                   id: "hr",
-                  title: "Behavioral & STAR",
-                  desc: "Conflict resolution, leadership, team collaboration & culture alignment.",
-                  badge: "HR Round",
-                  badgeColor: "bg-teal-50 text-teal-700 border-teal-200/60",
+                  title: "Behavioral & Leadership",
+                  desc: "STAR stories, teamwork, conflicts, and ownership.",
+                  badge: "HR",
+                  requiresProfile: false,
+                },
+                {
+                  id: "resume",
+                  title: "Resume Deep-Dive",
+                  desc: "Questions built only from your confirmed resume projects and decisions.",
+                  badge: "Resume",
+                  requiresProfile: true,
                 },
                 {
                   id: "mixed",
                   title: "Full Mock Panel",
-                  desc: "Realistic multi-category round spanning DSA, system design & behavioral.",
-                  badge: "Comprehensive",
-                  badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200/60",
+                  desc: "Comprehensive mix across coding, architecture, and behavioral.",
+                  badge: "Mixed",
+                  requiresProfile: false,
                 },
               ].map((style) => {
                 const isSelected = interviewerStyle === style.id;
+                const isLocked = style.requiresProfile && !hasConfirmedProfile;
                 return (
                   <button
                     key={style.id}
                     type="button"
-                    onClick={() => setInterviewerStyle(style.id)}
-                    className={`relative p-4 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between group ${
-                      isSelected
-                        ? "border-[#5967F2] bg-indigo-50/40 shadow-sm ring-1 ring-[#5967F2]"
-                        : "border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/50"
+                    onClick={() => {
+                      if (isLocked) return;
+                      setInterviewerStyle(style.id);
+                    }}
+                    disabled={isLocked}
+                    aria-disabled={isLocked}
+                    title={
+                      isLocked
+                        ? "Confirm your resume profile with at least one project first."
+                        : undefined
+                    }
+                    className={`relative p-3.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between group ${
+                      isLocked
+                        ? "border-[#E6E6E4] bg-[#F7F7F5] opacity-60 cursor-not-allowed"
+                        : "cursor-pointer"
+                    } ${
+                      isSelected && !isLocked
+                        ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
+                        : !isLocked
+                        ? "border-[#E6E6E4] hover:border-slate-300 bg-white"
+                        : ""
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${style.badgeColor}`}>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                           {style.badge}
                         </span>
-                        {isSelected && (
-                          <div className="w-4 h-4 rounded-full bg-[#5967F2] text-white flex items-center justify-center">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </div>
+                        {isLocked ? (
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            Locked
+                          </span>
+                        ) : (
+                          isSelected && (
+                            <div className="w-4 h-4 rounded-full bg-[#202124] text-white flex items-center justify-center">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          )
                         )}
                       </div>
-                      <div className="font-semibold text-sm text-[#1D1D1F] tracking-tight group-hover:text-black">
+                      <div className="font-semibold text-xs text-[#202124] tracking-tight">
                         {style.title}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                         {style.desc}
                       </p>
                     </div>
@@ -249,64 +378,77 @@ function InterviewContent() {
                 );
               })}
             </div>
+
+            {!hasConfirmedProfile && (
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Resume Deep-Dive unlocks once you confirm a profile with at least one project.{" "}
+                <Link
+                  href="/resume"
+                  className="font-semibold text-[#B3582A] hover:text-[#C4744B] underline underline-offset-2"
+                >
+                  Confirm your resume profile
+                </Link>
+                .
+              </p>
+            )}
           </div>
 
-          {/* Section 2: Mode Selection */}
-          <div className="space-y-3.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-              2. Simulation Style & Coaching Feedback
+          {/* Section 2: Feedback Mode */}
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-slate-700">
+              Feedback Style
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setMode("practice")}
-                className={`p-5 rounded-2xl border text-left transition-all duration-150 relative ${
+                className={`p-4 rounded-2xl border text-left transition-all duration-150 relative cursor-pointer ${
                   mode === "practice"
-                    ? "border-[#5967F2] bg-indigo-50/40 shadow-sm ring-1 ring-[#5967F2]"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
+                    ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
+                    : "border-[#E6E6E4] hover:border-slate-300 bg-white"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="font-semibold text-sm text-[#1D1D1F]">
-                    Interactive Coaching Mode
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-xs text-[#202124]">
+                    Interactive Coaching
                   </div>
                   {mode === "practice" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#5967F2]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#202124]" />
                   )}
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Instant rubric scores after each question, missing key concepts highlight, and helpful coaching suggestions before the next turn.
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Immediate score and missing points feedback after each answer.
                 </p>
               </button>
 
               <button
                 type="button"
                 onClick={() => setMode("realistic")}
-                className={`p-5 rounded-2xl border text-left transition-all duration-150 relative ${
+                className={`p-4 rounded-2xl border text-left transition-all duration-150 relative cursor-pointer ${
                   mode === "realistic"
-                    ? "border-[#5967F2] bg-indigo-50/40 shadow-sm ring-1 ring-[#5967F2]"
-                    : "border-slate-200 hover:border-slate-300 bg-white"
+                    ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
+                    : "border-[#E6E6E4] hover:border-slate-300 bg-white"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="font-semibold text-sm text-[#1D1D1F]">
-                    Realistic Simulation Round
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-semibold text-xs text-[#202124]">
+                    Realistic Simulation
                   </div>
                   {mode === "realistic" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#5967F2]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#202124]" />
                   )}
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  True interview panel conditions. Uninterrupted voice-to-voice flow with natural neural interviewer audio and comprehensive debrief at the end.
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Continuous interview flow with a comprehensive final debrief.
                 </p>
               </button>
             </div>
           </div>
 
           {/* Section 3: Duration / Question Count */}
-          <div className="space-y-3.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
-              3. Round Length & Questions
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-slate-700">
+              Round Length
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               {[
@@ -320,48 +462,35 @@ function InterviewContent() {
                     key={d.id}
                     type="button"
                     onClick={() => setDurationMode(d.id)}
-                    className={`p-3 sm:p-3.5 rounded-2xl border text-center transition-all duration-150 min-h-[48px] ${
+                    className={`p-3 rounded-2xl border text-center transition-all duration-150 min-h-[48px] cursor-pointer ${
                       isSelected
-                        ? "border-[#168A72] bg-teal-50/60 text-[#168A72] shadow-xs ring-1 ring-[#168A72]"
-                        : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
+                        ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
+                        : "border-[#E6E6E4] hover:border-slate-300 text-slate-700 bg-white"
                     }`}
                   >
-                    <div className="text-xs font-semibold">{d.label}</div>
-                    <div className="text-[11px] font-bold mt-0.5 text-slate-800">{d.count}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{d.time}</div>
+                    <div className="text-xs font-semibold text-[#202124]">{d.label}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">{d.count} • {d.time}</div>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Neural Voice & Privacy Guarantee Sub-strip */}
-          <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-slate-500 text-[11px]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Ultra-realistic neural recruiter voice (Edge TTS engine active)</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-600">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-              <span>Zero-disk audio retention guarantee</span>
-            </div>
-          </div>
-
-          {/* Launch Action */}
+          {/* Launch Action - High Priority Confident Graphite */}
           <button
             onClick={handleStartSession}
             disabled={starting}
-            className="w-full py-4 rounded-2xl bg-[#20232C] hover:bg-black text-[#F4F1EA] font-semibold text-sm transition-all duration-150 shadow-md hover:shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer min-h-[52px]"
+            className="w-full py-3.5 sm:py-4 rounded-xl bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer min-h-[48px]"
           >
             {starting ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>Preparing Interview Blueprint & Orb...</span>
+                <span>Preparing Interview...</span>
               </>
             ) : (
               <>
                 <Mic className="w-4 h-4 text-white" />
-                <span>Start Interview Round</span>
+                <span>Start Interview</span>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
               </>
             )}
@@ -372,48 +501,46 @@ function InterviewContent() {
       {/* Audio Privacy & Consent Modal */}
       {consentModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E8E5DD] rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-md w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-            <div className="w-10 h-10 bg-teal-50 rounded-2xl flex items-center justify-center text-[#168A72]">
+          <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-md w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="w-10 h-10 bg-[#FAF2ED] border border-[#EED9CC] rounded-2xl flex items-center justify-center text-[#B3582A]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-[#20232C]">
-                Audio Privacy Disclosure & Consent
+              <h3 className="text-lg font-semibold text-[#202124]">
+                A quick note on your microphone
               </h3>
-              <p className="text-xs text-slate-600 leading-relaxed mt-1.5">
-                Antigravity Interview Coach adheres to strict privacy-by-design standards:
-                your audio is streamed in-memory solely for transcription and immediately purged.
-                No raw voice recordings are stored on disk or shared.
+              <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                We only listen while you speak to turn your voice into text for answer evaluation. We never save your raw audio files or share them with anyone.
               </p>
             </div>
 
-            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-[11px] text-slate-600 space-y-1.5">
+            <div className="p-3 bg-[#F7F7F5] border border-[#E6E6E4] rounded-2xl text-[11px] text-slate-600 space-y-1.5">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                <span>Zero raw audio persistence to disk or storage</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
+                <span>Audio is converted to text and immediately discarded</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                <span>Microphone released automatically when recording stops</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
+                <span>Microphone turns off the second you stop speaking</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-                <span>Interview history can be deleted anytime in Settings</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
+                <span>You can delete your transcripts anytime in Settings</span>
               </div>
             </div>
 
             <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setConsentModalOpen(false)}
-                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition min-h-[44px]"
+                className="flex-1 py-3 rounded-xl border border-[#E6E6E4] text-[#5F6368] text-xs font-semibold hover:bg-[#F7F7F5] transition min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleGrantConsent}
-                className="flex-1 py-3 rounded-xl bg-[#20232C] hover:bg-black text-[#F4F1EA] text-xs font-semibold transition shadow-sm min-h-[44px]"
+                className="flex-1 py-3 rounded-xl bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold transition shadow-sm min-h-[44px]"
               >
-                I Consent & Begin
+                Got it, start practice
               </button>
             </div>
           </div>
@@ -427,8 +554,8 @@ export default function InterviewLauncherPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F4F1EA] text-[#20232C] flex flex-col items-center justify-center space-y-3">
-          <RefreshCw className="w-5 h-5 text-[#20232C] animate-spin" />
+        <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
+          <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
           <span className="text-xs font-semibold text-slate-500 tracking-tight">
             Loading Studio Launcher...
           </span>

@@ -1,0 +1,330 @@
+[
+  {
+    "id": "sde_dsa_001",
+    "short_title": "Longest Consecutive Sequence",
+    "question": "Given an unsorted array of integers, how would you find the length of the longest sequence of consecutive elements in O(n) time? Walk me through your approach, why a naive sort falls short, and what edge cases you would test.",
+    "role": "software_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "problem-solving",
+    "category": "dsa_hashing",
+    "primary_skill": "Data Structures & Algorithms",
+    "secondary_skills": [
+      "Hash Sets",
+      "Complexity Analysis",
+      "Boundary Testing"
+    ],
+    "concepts": [
+      "Data Structures & Algorithms",
+      "Hash Sets",
+      "Complexity Analysis",
+      "Boundary Testing",
+      "hash set",
+      "linear time",
+      "sequence start"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Candidate should use a HashSet for O(1) lookups. To maintain linear total time, only start sequence expansion if (num - 1) is not in the set (i.e. num is the sequence start). Address empty array, duplicates, negative numbers, and large ranges.",
+    "rubric_1_to_5": {
+      "score_1": "Proposes O(n log n) sorting or quadratic scan without realizing it violates linear time requirement.",
+      "score_3": "Identifies HashSet lookup but re-scans elements redundantly or misses the (num - 1) sequence-start check.",
+      "score_5": "Cleanly articulates the sequence-start condition guaranteeing each element is visited at most twice (O(n)), analyzes space/time complexity, and covers duplicate/empty edge cases."
+    },
+    "follow_up_directions": [
+      "How does your solution behave if the integers are streamed continuously rather than loaded in memory?",
+      "What if memory is constrained such that loading all elements into a hash set exceeds RAM?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_dsa_002",
+    "short_title": "Subarray Sum Equals K",
+    "question": "Given an array of integers and an integer k, find the total number of continuous subarrays whose sum equals k. Explain why a sliding window approach may fail when numbers can be negative, and how prefix sums with hashing resolve this.",
+    "role": "software_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "problem-solving",
+    "category": "dsa_two_pointers",
+    "primary_skill": "Data Structures & Algorithms",
+    "secondary_skills": [
+      "Prefix Sums",
+      "Hash Maps",
+      "Negative Numbers"
+    ],
+    "concepts": [
+      "Data Structures & Algorithms",
+      "Prefix Sums",
+      "Hash Maps",
+      "Negative Numbers",
+      "prefix sum",
+      "sliding window",
+      "subarray sum"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Candidate explains that two pointers / sliding window requires monotonic sums (fails with negative values). Correct approach tracks prefix sums in a HashMap (prefix_sum -> count). Initialize map with {0: 1} to count subarrays starting from index 0. O(n) time and O(n) space.",
+    "rubric_1_to_5": {
+      "score_1": "Attempts sliding window without understanding why negative numbers invalidate window shrinking.",
+      "score_3": "Uses prefix sum with hash map but misses initial {0: 1} base case or duplicate prefix sums.",
+      "score_5": "Clearly demonstrates mathematical relation (current_sum - k in map), handles negatives and zeros cleanly, explains why window fails, and details O(n) space/time."
+    },
+    "follow_up_directions": [
+      "What if we only need to return the maximum length of such a subarray instead of the count?",
+      "How would you handle integer overflow if array elements are close to 32-bit limits?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_core_001",
+    "short_title": "DB Index Internals & Query Plans",
+    "question": "Suppose a query filtering on 'WHERE user_id = ? AND created_at > ?' takes 4 seconds on a table with 20 million rows. How do B-Tree composite indexes work under the hood, and how would index column ordering ('(user_id, created_at)' vs '(created_at, user_id)') affect the query plan?",
+    "role": "software_engineer",
+    "phase": "foundations",
+    "question_type": "applied-fundamentals",
+    "category": "core_fundamentals",
+    "primary_skill": "Databases & Indexing",
+    "secondary_skills": [
+      "B-Trees",
+      "Query Optimization",
+      "Composite Indexes"
+    ],
+    "concepts": [
+      "Databases & Indexing",
+      "B-Trees",
+      "Query Optimization",
+      "Composite Indexes",
+      "btree",
+      "index",
+      "query plan"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "B-Tree composite indexes sort lexicographically by the first column, then the second. Equality on user_id isolates a contiguous range of user records, allowing range scan on created_at. Putting created_at first forces scanning all records across all users with created_at > ?, rendering user_id filtering inefficient.",
+    "rubric_1_to_5": {
+      "score_1": "Believes column order in a composite index does not matter or treats indexes as unsorted hashes.",
+      "score_3": "Knows (user_id, created_at) is preferred but cannot explain the B-Tree leaf node sorting or range scan mechanics.",
+      "score_5": "Thoroughly explains B-Tree structure, left-to-right prefix matching, equality vs range predicates, and explains how to inspect via EXPLAIN query plan."
+    },
+    "follow_up_directions": [
+      "What happens if our query also includes 'ORDER BY created_at DESC'?",
+      "When would a Hash index be preferred over a B-Tree, and what are its trade-offs?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_core_002",
+    "short_title": "Process vs Thread Memory & Concurrency",
+    "question": "What is the concrete difference between a process and a thread in terms of virtual memory, stack, and heap? If two threads in the same process increment a shared counter 10,000 times without synchronization, explain at the assembly/CPU level why the final count is often less than 20,000.",
+    "role": "software_engineer",
+    "phase": "foundations",
+    "question_type": "applied-fundamentals",
+    "category": "core_fundamentals",
+    "primary_skill": "Operating Systems",
+    "secondary_skills": [
+      "Processes & Threads",
+      "Race Conditions",
+      "Memory Models"
+    ],
+    "concepts": [
+      "Operating Systems",
+      "Processes & Threads",
+      "Race Conditions",
+      "Memory Models",
+      "thread",
+      "race condition",
+      "mutex"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Processes have isolated address spaces (page tables); threads share heap, code, and file descriptors but have independent program counters and stacks. 'counter++' is not atomic: it compiles to Read (load into register), Modify (increment), and Write (store back). Context switches between read and store cause lost updates.",
+    "rubric_1_to_5": {
+      "score_1": "Vague answer stating threads are 'lightweight' without explaining memory sharing or race condition mechanics.",
+      "score_3": "Explains shared heap vs private stack, but only describes race condition as 'collision' without load-modify-store steps.",
+      "score_5": "Accurately articulates CPU load-modify-store sequence, cache/register race conditions, atomic operations (CAS/fetch_and_add), and mutex trade-offs."
+    },
+    "follow_up_directions": [
+      "How do CPU cache coherency protocols (like MESI) and memory barriers relate to atomic variables?",
+      "What is the difference between a mutex lock and a spinlock, and when should an engineer choose one over the other?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_debug_001",
+    "short_title": "Diagnosing Intermittent API Timeouts",
+    "question": "An internal payment microservice occasionally throws HTTP 504 Gateway Timeouts under moderate traffic, but CPU and memory utilization remain below 25%. Walk me through your step-by-step diagnostic workflow to isolate the bottleneck.",
+    "role": "software_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "debugging",
+    "category": "applied_problem_solving",
+    "primary_skill": "Practical Software Engineering",
+    "secondary_skills": [
+      "System Diagnostics",
+      "Connection Pooling",
+      "Distributed Tracing"
+    ],
+    "concepts": [
+      "Practical Software Engineering",
+      "System Diagnostics",
+      "Connection Pooling",
+      "Distributed Tracing",
+      "latency",
+      "connection pool",
+      "tracing"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://coderpad.io/survey-reports/coderpad-state-of-tech-hiring-2026/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Candidate checks downstream dependencies (payment gateway, database, cache) and connection pool exhaustion (DB pool, HTTP client pool). Inspects thread state/thread dumps (blocked threads, lock contention), distributed traces (Jaeger/OpenTelemetry) to identify which span takes time, network latency, and GC pauses.",
+    "rubric_1_to_5": {
+      "score_1": "Suggests randomly increasing server RAM/CPU or restarting containers without investigating root cause.",
+      "score_3": "Mentions checking logs and database queries, but misses connection pool limits, thread blocking, and downstream latencies.",
+      "score_5": "Demonstrates structured engineering diagnosis: correlation IDs, trace span breakdown, database/HTTP connection pool saturation, thread dumps, and downstream network timeouts."
+    },
+    "follow_up_directions": [
+      "If you discover the database connection pool is maxed out at 50 connections, how would you determine whether to increase the pool or optimize slow transactions?",
+      "How would you implement circuit breakers to prevent a slow payment gateway from bringing down the entire calling service?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_design_001",
+    "short_title": "Idempotent Order Creation API",
+    "question": "An order-creation API sometimes creates two orders when a mobile client retries after a network timeout. How would you design an end-to-end idempotent request mechanism between the mobile app, API server, and database to guarantee exactly-once order creation?",
+    "role": "software_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "practical-design",
+    "category": "system_design_architecture",
+    "primary_skill": "API & System Design",
+    "secondary_skills": [
+      "Idempotency",
+      "Database Constraints",
+      "Distributed Systems"
+    ],
+    "concepts": [
+      "API & System Design",
+      "Idempotency",
+      "Database Constraints",
+      "Distributed Systems",
+      "unique constraint",
+      "retry"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "Client generates a unique Idempotency-Key (UUID v4) per user checkout attempt and passes it in header. Server stores idempotency key with unique database constraint or distributed lock/cache. If key exists with completed status, return cached response; if in-progress, return 409 or wait; if new, process within DB transaction.",
+    "rubric_1_to_5": {
+      "score_1": "Suggests client-side disabling of the submit button as the primary solution, ignoring network retry scenarios.",
+      "score_3": "Mentions idempotency keys but misses concurrent retries, database unique constraints, or response caching.",
+      "score_5": "Provides complete architectural lifecycle: client UUID generation, server-side unique key constraint, handling concurrent in-flight retries, and returning identical cached response upon re-execution."
+    },
+    "follow_up_directions": [
+      "What if the first request timed out while writing to the payment provider, but succeeded in the database? How do you reconcile state?",
+      "How long should the idempotency key and response be retained in storage?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "sde_ai_001",
+    "short_title": "Auditing AI-Generated Concurrency Code",
+    "question": "An AI coding assistant wrote a thread-safe singleton cache in Python using a double-checked locking pattern with a regular dictionary. What potential subtle issues would you look for when code-reviewing this implementation, and how would you verify it under concurrent load?",
+    "role": "software_engineer",
+    "phase": "applied_problem_solving",
+    "question_type": "ai-assisted-engineering",
+    "category": "system_tradeoffs",
+    "primary_skill": "Code Review & Concurrency",
+    "secondary_skills": [
+      "Python GIL",
+      "Double-Checked Locking",
+      "Load Testing"
+    ],
+    "concepts": [
+      "Code Review & Concurrency",
+      "Python GIL",
+      "Double-Checked Locking",
+      "Load Testing",
+      "gil",
+      "lock",
+      "concurrency"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 4,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://coderpad.io/survey-reports/coderpad-state-of-tech-hiring-2026/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "software_engineer",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+    },
+    "internal_expected_answer": "In Python, the GIL impacts thread scheduling, but I/O or C-extensions release it. Double-checked locking in some languages (Java/C++) suffers from instruction reordering unless memory barriers/volatile are used. In Python, module-level import is naturally thread-safe. Candidate discusses stress testing with multi-threading harness, checking dictionary mutation race conditions, and unit testing with high concurrency.",
+    "rubric_1_to_5": {
+      "score_1": "Uncritically trusts the AI code or claims the GIL prevents all race conditions in Python.",
+      "score_3": "Identifies that race conditions can occur during non-atomic operations, but cannot articulate how to write a concurrent test harness.",
+      "score_5": "Deeply analyzes language-specific memory models, explains Python module caching as the idiomatic singleton, and outlines property-based or high-concurrency race condition testing."
+    },
+    "follow_up_directions": [
+      "Why is module-level import in Python considered inherently thread-safe?",
+      "How would you use threading.Barrier or concurrent.futures to reliably trigger race conditions in a unit test?"
+    ],
+    "version": "2026.1"
+  }
+]

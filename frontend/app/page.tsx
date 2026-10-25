@@ -36,10 +36,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-6 h-6 text-[#5967F2] animate-spin" />
-        <span className="text-xs uppercase tracking-widest font-semibold text-slate-500">
-          Loading Coach Workspace...
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
+        <span className="text-xs font-medium text-[#5F6368]">
+          Loading dashboard...
         </span>
       </div>
     );
@@ -47,15 +47,15 @@ export default function HomePage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
-          <div className="text-red-500 font-bold text-sm">Connection Warning</div>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            {error || "Could not retrieve candidate identity. Ensure FastAPI backend is running on http://127.0.0.1:8000."}
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+        <div className="bg-white border border-[#E6E6E4] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
+          <div className="text-[#C4744B] font-semibold text-sm">Connection Warning</div>
+          <p className="text-xs text-[#5F6368] leading-relaxed">
+            {error || "Could not connect to the backend server. Please verify the service is running."}
           </p>
           <button
             onClick={loadData}
-            className="w-full py-2.5 bg-[#20232C] text-white rounded-xl text-xs font-semibold hover:bg-black transition cursor-pointer"
+            className="w-full py-2.5 bg-[#202124] text-white rounded-xl text-xs font-semibold hover:bg-black transition cursor-pointer"
           >
             Retry Connection
           </button>
@@ -65,7 +65,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navbar user={user} />
       <main className="flex-1">
         {user.onboarding_state !== "COMPLETED" ? (

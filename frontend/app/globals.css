@@ -2,27 +2,31 @@
 
 @layer base {
   :root {
-    --bg-workspace: #F4F1EA;
-    --text-graphite: #20232C;
-    --text-secondary: #575B66;
-    --text-tertiary: #8C909C;
+    --bg-workspace: #FFFFFF;
+    --bg-subtle: #F8F8F6;
+    --text-graphite: #202124;
+    --text-secondary: #5F6368;
+    --text-tertiary: #80868B;
     --surface-card: #FFFFFF;
-    --border-subtle: #E8E5DD;
-    --border-strong: #D5D0C5;
-    --accent-indigo: #4F46E5;
-    --accent-indigo-hover: #4338CA;
-    --accent-sage: #168A72;
-    --studio-charcoal: #151517;
-    --studio-surface: #1E1E22;
-    --studio-surface-elevated: #26262B;
-    --studio-border: #2E2E35;
+    --surface-secondary: #F7F7F5;
+    --surface-tertiary: #F2F2F0;
+    --border-subtle: #E6E6E4;
+    --border-strong: #D4D4D0;
+    --accent-clay: #C4744B;
+    --accent-clay-hover: #B3643C;
+    --accent-clay-subtle: #FAF2ED;
+    --accent-clay-border: #EED9CC;
+    --studio-charcoal: #141517;
+    --studio-surface: #1C1D20;
+    --studio-surface-elevated: #242529;
+    --studio-border: #2C2D32;
     --studio-text: #F3F3F5;
     --studio-muted: #8E929E;
   }
 }
 
 body {
-  background-color: var(--bg-workspace);
+  background-color: #FFFFFF;
   color: var(--text-graphite);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   letter-spacing: -0.012em;

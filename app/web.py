@@ -7,14 +7,15 @@ FastAPI web application providing:
 """
 import time
 import logging
+from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, Request, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.database import Database
 from app.question_bank import QuestionBank
-from app.security import hash_token, encrypt_api_key, mask_api_key
+from app.security import hash_token, encrypt_api_key, mask_api_key, generate_fernet_key
 from app.services.groq_service import validate_groq_key, GroqServiceError
 from app.web_routes import get_web_router
 
@@ -28,7 +29,12 @@ def is_secure_request(request: Request, settings: Settings) -> bool:
     Rejects arbitrary untrusted X-Forwarded-Proto unless running behind trusted proxy.
     """
     client_host = request.client.host if request.client else ""
-    is_localhost = client_host in {"127.0.0.1", "::1", "localhost"}
+    is_localhost = (
+        client_host in {"127.0.0.1", "::1", "localhost"} or
+        client_host.startswith("192.168.") or
+        client_host.startswith("10.") or
+        client_host.startswith("172.")
+    )
     
     if settings.APP_ENV in {"development", "testing"} and is_localhost:
         return True
@@ -47,21 +53,25 @@ def is_secure_request(request: Request, settings: Settings) -> bool:
 
 
 def create_app(settings: Settings, db: Database, qb: Optional[QuestionBank] = None) -> FastAPI:
-    app = FastAPI(title="AI Interview Coach API", docs_url=None, redoc_url=None)
+    @asynccontextmanager
+    async def lifespan(fastapi_app: FastAPI):
+        await db.init_db()
+        yield
 
-    # Allow CORS from Next.js frontend
-    allowed_origins = [
-        settings.FRONTEND_ORIGIN,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    app = FastAPI(title="AI Interview Coach API", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+    # Allow CORS from Next.js frontend (including local network IP in dev)
+    cors_kwargs = {
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+    if settings.APP_ENV in {"development", "testing"}:
+        cors_kwargs["allow_origin_regex"] = r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$"
+    else:
+        cors_kwargs["allow_origins"] = [settings.FRONTEND_ORIGIN]
+
+    app.add_middleware(CORSMiddleware, **cors_kwargs)
 
     if qb is None:
         qb = QuestionBank("data/question_bank.json")
@@ -282,3 +292,22 @@ def create_app(settings: Settings, db: Database, qb: Optional[QuestionBank] = No
         )
 
     return app
+
+
+# Standard FastAPI module-level instance for `uvicorn app.web:app`
+def get_default_app() -> FastAPI:
+    settings = get_settings()
+    if not settings.ENCRYPTION_KEY:
+        settings.ENCRYPTION_KEY = generate_fernet_key()
+
+    db = Database(settings.DATABASE_PATH)
+    qb = QuestionBank("data/question_bank.json")
+    try:
+        qb.load_and_validate()
+    except Exception:
+        pass
+
+    return create_app(settings, db, qb)
+
+
+app = get_default_app()

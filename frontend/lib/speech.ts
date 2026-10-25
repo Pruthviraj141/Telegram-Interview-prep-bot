@@ -1,8 +1,8 @@
 /**
- * Ultra-Realistic Neural Speech & Audio Engine for AI Interview Studio.
- * - Streams human-grade Neural TTS (Microsoft Edge Neural Voices) via FastAPI /api/interview/tts.
- * - Zero robotic drone; sounds like a live human interviewer (Christopher, Jenny, Guy, Aria, Sonia).
- * - Automatic graceful fallback to Web Speech API if offline.
+ * Pure Neural Speech & Audio Engine for AI Interview Studio.
+ * - Exclusively streams human-grade Neural TTS (Microsoft Edge Neural Voices) via FastAPI /api/interview/tts.
+ * - Zero robotic browser speech synthesis fallback; eliminates duplicate/overlapping voices.
+ * - Strict single-audio concurrency: aborts in-flight network requests and halts prior audio immediately.
  * - Transient MediaRecorder capture with real-time audio volume analyser & track release.
  */
 
@@ -30,15 +30,15 @@ export const FALLBACK_NEURAL_VOICES: NeuralVoice[] = [
 export interface SpeechSettings {
   neuralVoiceId?: string;
   speed?: number;
-  useBrowserSpeech?: boolean;
 }
 
-class HybridVoiceEngine {
+class NeuralVoiceEngine {
   private currentAudio: HTMLAudioElement | null = null;
   private currentObjectUrl: string | null = null;
+  private currentAbortController: AbortController | null = null;
+  private currentPlayId: number = 0;
   private isSpeaking: boolean = false;
   private neuralVoices: NeuralVoice[] = FALLBACK_NEURAL_VOICES;
-  private browserVoices: SpeechSynthesisVoice[] = [];
   private listeners: (() => void)[] = [];
 
   constructor() {
@@ -46,7 +46,6 @@ class HybridVoiceEngine {
   }
 
   private async initVoices() {
-    // 1. Fetch backend neural voices
     try {
       const remote = await api.getTTSVoices();
       if (remote && remote.length > 0) {
@@ -56,21 +55,6 @@ class HybridVoiceEngine {
     } catch {
       // Use fallback defaults
     }
-
-    // 2. Load local browser voices for backup
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      this.loadBrowserVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        this.loadBrowserVoices();
-        this.notifyListeners();
-      };
-    }
-  }
-
-  private loadBrowserVoices() {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const all = window.speechSynthesis.getVoices();
-    this.browserVoices = all.filter((v) => v.lang.startsWith("en"));
   }
 
   onVoicesLoaded(callback: () => void) {
@@ -90,12 +74,26 @@ class HybridVoiceEngine {
     return this.neuralVoices;
   }
 
-  getBrowserVoices(): SpeechSynthesisVoice[] {
-    return this.browserVoices;
+  /**
+   * Unlock HTML5 Audio playback on user interaction (e.g. clicking 'Start Interview').
+   * Prevents browsers (Chrome, Safari, iOS) from blocking automated TTS question speech.
+   */
+  unlockAudio(): void {
+    if (typeof window === "undefined") return;
+    try {
+      // Play a tiny silent wav or unlock AudioContext
+      const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+      silentAudio.volume = 0.01;
+      silentAudio.play().then(() => {
+        silentAudio.pause();
+        silentAudio.removeAttribute("src");
+      }).catch(() => {});
+    } catch {}
   }
 
   /**
-   * Primary Speak method: Synthesizes realistic neural voice, falling back to Web Speech.
+   * Primary Speak method: Synthesizes realistic authentic neural voice.
+   * Cancels prior audio & network requests immediately to guarantee a single voice.
    */
   async speak(
     text: string,
@@ -111,19 +109,22 @@ class HybridVoiceEngine {
       return;
     }
 
-    const voiceId = settings.neuralVoiceId || "en-US-ChristopherNeural";
-
-    // If explicitly instructed to use browser speech or if synthesis API is avoided
-    if (settings.useBrowserSpeech) {
-      this.speakBrowser(cleanText, settings.speed, onEnd, onError);
-      return;
-    }
+    const playId = ++this.currentPlayId;
+    const abortController = new AbortController();
+    this.currentAbortController = abortController;
+    this.isSpeaking = true;
 
     try {
-      this.isSpeaking = true;
       const diff = settings.speed ? Math.round((settings.speed - 1) * 100) : 0;
       const speedRate = diff >= 0 ? `+${diff}%` : `${diff}%`;
-      const blob = await api.synthesizeSpeech(cleanText, voiceId, speedRate);
+      const voiceId = settings.neuralVoiceId || "en-US-ChristopherNeural";
+
+      const blob = await api.synthesizeSpeech(cleanText, voiceId, speedRate, abortController.signal);
+
+      // If another speech was triggered or stop() was called during fetch, discard
+      if (this.currentPlayId !== playId) {
+        return;
+      }
 
       if (this.currentObjectUrl) {
         URL.revokeObjectURL(this.currentObjectUrl);
@@ -141,73 +142,74 @@ class HybridVoiceEngine {
       this.currentAudio = audio;
 
       audio.onended = () => {
-        this.cleanupAudio();
-        if (onEnd) onEnd();
+        if (this.currentPlayId === playId) {
+          this.cleanupAudio();
+          if (onEnd) onEnd();
+        }
       };
 
-      audio.onerror = () => {
-        this.cleanupAudio();
-        // Fallback to browser synthesis
-        this.speakBrowser(cleanText, settings.speed, onEnd, onError);
+      audio.onerror = (e) => {
+        if (this.currentPlayId === playId) {
+          this.cleanupAudio();
+          if (onError) onError(e);
+          else if (onEnd) onEnd();
+        }
       };
 
-      await audio.play();
-    } catch {
-      // Fallback cleanly to browser speech synthesis
+      try {
+        await audio.play();
+      } catch (playErr: any) {
+        if (playErr?.name === "NotAllowedError") {
+          console.warn("[NeuralVoiceEngine] Autoplay blocked by browser policy. User gesture required.");
+          // Inform caller that autoplay was blocked so UI can show a gentle prompt/indicator
+          if (onError) onError(new Error("AUTOPLAY_BLOCKED"));
+          return;
+        }
+        throw playErr;
+      }
+    } catch (err: any) {
+      // If aborted or superseded, exit cleanly
+      if (this.currentPlayId !== playId || err?.name === "AbortError") {
+        return;
+      }
       this.cleanupAudio();
-      this.speakBrowser(cleanText, settings.speed, onEnd, onError);
-    }
-  }
-
-  private speakBrowser(
-    text: string,
-    speed: number = 1.0,
-    onEnd?: () => void,
-    onError?: (err: any) => void
-  ) {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      if (onEnd) onEnd();
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = Math.max(0.8, Math.min(1.3, speed));
-    utterance.pitch = 1.0;
-
-    if (this.browserVoices.length > 0) {
-      utterance.voice = this.browserVoices[0];
-    }
-
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    };
-
-    utterance.onerror = (e) => {
-      this.isSpeaking = false;
-      if (onError) onError(e);
+      if (onError) onError(err);
       else if (onEnd) onEnd();
-    };
-
-    this.isSpeaking = true;
-    window.speechSynthesis.speak(utterance);
+    }
   }
 
   stop() {
+    this.currentPlayId++;
+    if (this.currentAbortController) {
+      try {
+        this.currentAbortController.abort();
+      } catch {}
+      this.currentAbortController = null;
+    }
     this.cleanupAudio();
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
     }
     this.isSpeaking = false;
   }
 
   private cleanupAudio() {
     if (this.currentAudio) {
-      this.currentAudio.pause();
+      try {
+        this.currentAudio.pause();
+        this.currentAudio.onended = null;
+        this.currentAudio.onerror = null;
+        this.currentAudio.removeAttribute("src");
+        this.currentAudio.load();
+      } catch {}
       this.currentAudio = null;
     }
     if (this.currentObjectUrl) {
-      URL.revokeObjectURL(this.currentObjectUrl);
+      try {
+        URL.revokeObjectURL(this.currentObjectUrl);
+      } catch {}
       this.currentObjectUrl = null;
     }
     this.isSpeaking = false;
@@ -218,7 +220,7 @@ class HybridVoiceEngine {
   }
 }
 
-export const speechSynth = new HybridVoiceEngine();
+export const speechSynth = new NeuralVoiceEngine();
 
 /**
  * Transient MediaRecorder with live audio loudness analysis.
