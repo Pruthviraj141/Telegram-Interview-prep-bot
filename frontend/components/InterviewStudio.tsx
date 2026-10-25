@@ -28,6 +28,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn, getErrorMessage } from "@/lib/utils";
+import { useKeyboardInset } from "@/lib/use-keyboard-inset";
+import { useDraft } from "@/lib/use-draft";
 
 interface InterviewStudioProps {
   initialSession: InterviewSession;
@@ -93,7 +95,14 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   const [scratchpadOpen, setScratchpadOpen] = useState<boolean>(false);
   const [scratchpadText, setScratchpadText] = useState<string>("");
   const [useTypedMode, setUseTypedMode] = useState<boolean>(false);
-  const [typedAnswer, setTypedAnswer] = useState<string>("");
+  const draftKey = `ai_coach_draft_${initialSession.id}_${currentTurn.id}`;
+  const {
+    value: typedAnswer,
+    setValue: setTypedAnswer,
+    saved: draftSaved,
+    clear: clearDraft,
+  } = useDraft(draftKey);
+  const [questionExpanded, setQuestionExpanded] = useState<boolean>(true);
 
   // Practice Mode Options & Instant Feedback
   const [turnEvaluation, setTurnEvaluation] = useState<TurnEvaluationView | null>(null);
@@ -126,8 +135,33 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Single-flight guard: a double click or ⌘↵ must never submit twice.
+  const submitLockRef = useRef<boolean>(false);
+  // The early-exit confirmation is inline, so bring it into view when opened.
+  const endPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const requestEndRound = () => {
+    setShowEndModal(true);
+    requestAnimationFrame(() => {
+      endPanelRef.current?.scrollIntoView({ block: "nearest" });
+      endPanelRef.current?.focus();
+    });
+  };
+
+  useKeyboardInset();
+
+  // Ask the browser to confirm before a reload drops an active round.
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
 
   const isPractice = session.mode === "practice";
+  const typedWordCount = typedAnswer.trim() ? typedAnswer.trim().split(/\s+/).length : 0;
 
   // Voice settings kept in a ref so speakText stays stable across renders and
   // changing the voice does not re-trigger the current question.
@@ -166,9 +200,10 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     setShowDisputeForm(false);
     setDisputeText("");
     setDisputeMessage(null);
-    setTypedAnswer("");
+    clearDraft();
     setLiveTranscriptPreview("");
     setUseTypedMode(false);
+    setQuestionExpanded(true);
     setErrorMsg(null);
     setScratchpadText("");
     setScratchpadOpen(false);
@@ -360,11 +395,12 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     }
   };
 
-  // Submit typed response fallback
-  const handleTypedSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Submit typed response fallback. Kept separate from the form handler so
+  // ⌘/Ctrl+Enter can trigger exactly the same single-flight path.
+  const submitTypedAnswer = async () => {
     const answer = typedAnswer.trim();
-    if (!answer) return;
+    if (!answer || submitLockRef.current) return;
+    submitLockRef.current = true;
     setErrorMsg(null);
     setOrbState("thinking");
     setIsEvaluating(true);
@@ -377,14 +413,20 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
         scratchpad_text: scratchpadOpen ? scratchpadText : undefined,
         assistance_used: buildAssistance(),
       });
-      setTypedAnswer("");
+      clearDraft();
       handleTurnResult(res);
     } catch (err: unknown) {
       setOrbState("idle");
       handleSubmissionError(err, answer, "Failed to submit answer. Please retry.");
     } finally {
+      submitLockRef.current = false;
       setIsEvaluating(false);
     }
+  };
+
+  const handleTypedSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void submitTypedAnswer();
   };
 
   // Handle Turn Result
@@ -501,7 +543,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   return (
     <div
       className={cn(
-        "studio min-h-screen bg-canvas text-ink flex flex-col justify-between selection:bg-accent-subtle selection:text-ink transition-all relative overflow-hidden font-sans",
+        "studio min-h-dvh bg-canvas text-ink flex flex-col justify-between selection:bg-accent-subtle selection:text-ink transition-all relative overflow-hidden font-sans",
         isFullscreen && "fixed inset-0 z-50 overflow-y-auto"
       )}
     >
@@ -509,9 +551,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       <header className="relative z-20 border-b border-line bg-canvas/95 backdrop-blur-md px-3 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
-            onClick={() => setShowEndModal(true)}
+            onClick={requestEndRound}
             aria-label="Exit round"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-ink-secondary text-xs font-medium transition cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-ink-secondary text-xs font-medium transition cursor-pointer shrink-0 min-h-[44px] sm:min-h-[36px]"
           >
             <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Exit</span>
@@ -537,7 +579,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           <div className="relative">
             <button
               onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-xs font-medium text-ink-secondary transition cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-xs font-medium text-ink-secondary transition cursor-pointer min-h-[44px] sm:min-h-[36px]"
               title="Change neural voice"
             >
               <Volume2 className="w-3.5 h-3.5 text-ink-secondary" />
@@ -554,7 +596,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                   </button>
                 </div>
 
-                <div className="space-y-1 max-h-56 overflow-y-auto studio-scroll">
+                <div className="space-y-1 max-h-56 overflow-y-auto">
                   {neuralVoices.map((v) => (
                     <button
                       key={v.id}
@@ -605,7 +647,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
               setIsMuted(!isMuted);
             }}
             className={cn(
-              "w-8 h-8 rounded-xl border text-xs flex items-center justify-center transition cursor-pointer",
+              "w-11 h-11 sm:w-8 sm:h-8 rounded-xl border text-xs flex items-center justify-center transition cursor-pointer",
               isMuted
                 ? "bg-danger-subtle border-danger/30 text-danger-ink"
                 : "bg-surface border-line text-ink-secondary hover:bg-surface-raised"
@@ -619,7 +661,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           <button
             onClick={() => setScratchpadOpen(!scratchpadOpen)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl border text-xs font-medium transition cursor-pointer",
+              "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl border text-xs font-medium transition cursor-pointer min-h-[44px] sm:min-h-[36px]",
               scratchpadOpen
                 ? "bg-accent-strong text-on-accent border-accent-line shadow-xs"
                 : "bg-surface border-line text-ink-secondary hover:bg-surface-raised"
@@ -645,14 +687,29 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-between gap-4 sm:gap-6 pb-safe">
         {/* Error Alert */}
         {errorMsg && (
-          <div className="w-full p-3 sm:p-4 rounded-2xl bg-danger-subtle border border-danger/40 text-danger-ink text-xs flex items-center justify-between gap-3 shadow-sm">
+          <div
+            role="alert"
+            className="w-full p-3 sm:p-4 rounded-2xl bg-danger-subtle border border-danger/40 text-danger-ink text-xs flex items-center justify-between gap-3 shadow-sm"
+          >
             <div className="flex items-center gap-2.5 min-w-0">
               <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
-              <span className="truncate">{errorMsg}</span>
+              <span className="leading-relaxed">{errorMsg}</span>
             </div>
-            <button onClick={() => setErrorMsg(null)} className="text-danger-ink hover:text-ink text-xs underline shrink-0 cursor-pointer">
-              Dismiss
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {typedAnswer.trim() && (
+                <button
+                  type="button"
+                  onClick={() => void submitTypedAnswer()}
+                  disabled={isEvaluating}
+                  className="text-danger-ink hover:text-ink text-xs font-semibold underline disabled:opacity-50 cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+              <button onClick={() => setErrorMsg(null)} className="text-danger-ink hover:text-ink text-xs underline cursor-pointer">
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
@@ -662,8 +719,15 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
         </div>
 
         {/* Interviewer Question Module */}
-        <div className="w-full bg-surface border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-lg text-center space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+        <div className="w-full bg-surface border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-lg text-left space-y-3 sm:space-y-4">
+          <div className="flex items-center gap-2 text-ink-secondary">
+            <span className="w-6 h-6 rounded-full bg-surface-raised border border-line flex items-center justify-center shrink-0">
+              <Mic className="w-3 h-3 text-ink-tertiary" />
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Interviewer</span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-line text-ink-secondary text-[10px] font-semibold uppercase tracking-wider">
               {currentTurn.category}
             </span>
@@ -674,12 +738,21 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             )}
           </div>
 
-          <h2 className="font-question text-ink max-w-2xl mx-auto">
+          <h2 className={cn("font-question text-ink max-w-2xl", !questionExpanded && "line-clamp-2")}>
             {currentTurn.question_text}
           </h2>
+          {!questionExpanded && (
+            <button
+              type="button"
+              onClick={() => setQuestionExpanded(true)}
+              className="inline-flex items-center text-[11px] font-medium text-accent-strong hover:text-ink underline underline-offset-2 min-h-[44px] sm:min-h-[36px]"
+            >
+              Show full question
+            </button>
+          )}
 
           {/* Replay / Play Audio Button */}
-          <div className="flex flex-col items-center justify-center pt-0.5 gap-2">
+          <div className="flex flex-col items-start justify-start pt-0.5 gap-2">
             {autoplayBlocked ? (
               <button
                 onClick={() => {
@@ -694,7 +767,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             ) : (
               <button
                 onClick={() => speakText(currentTurn.question_text)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[36px]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[44px] sm:min-h-[36px]"
               >
                 <Volume2 className="w-3.5 h-3.5 text-ink-tertiary" />
                 <span>Replay Question</span>
@@ -712,7 +785,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     setHintRevealed(true);
                     setHintUsed(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[36px]"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[44px] sm:min-h-[36px]"
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-warning-ink" />
                   <span>Show rubric guidance</span>
@@ -936,7 +1009,11 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           <div className="w-full p-4 rounded-2xl sm:rounded-3xl bg-surface border border-line space-y-2">
             <div className="flex items-center justify-between text-xs text-ink-tertiary">
               <span className="font-semibold text-ink">Scratchpad</span>
-              <button onClick={() => setScratchpadOpen(false)} className="text-ink-tertiary hover:text-ink">
+              <button
+                onClick={() => setScratchpadOpen(false)}
+                aria-label="Close scratchpad"
+                className="inline-flex items-center justify-center w-11 h-11 sm:w-8 sm:h-8 -mr-2 rounded-lg text-ink-tertiary hover:text-ink hover:bg-surface-raised transition cursor-pointer"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -951,9 +1028,53 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           </div>
         )}
 
+        {/* Early exit confirmation, inline so nothing covers the composer */}
+        {showEndModal && (
+          <div
+            ref={endPanelRef}
+            tabIndex={-1}
+            role="alertdialog"
+            aria-labelledby="end-round-title"
+            aria-describedby="end-round-desc"
+            className="w-full p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-warning-subtle border border-warning/30 space-y-3 focus:outline-none"
+          >
+            <div className="flex items-start gap-3">
+              <span className="w-8 h-8 rounded-xl bg-surface border border-warning/30 flex items-center justify-center text-warning-ink shrink-0">
+                <AlertTriangle className="w-4 h-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h3 id="end-round-title" className="text-sm font-semibold text-ink">
+                  End this round now?
+                </h3>
+                <p id="end-round-desc" className="text-xs text-ink-secondary leading-relaxed mt-1">
+                  Answers you already submitted are saved and scored. This question
+                  {typedAnswer.trim() ? " and the text you have typed" : ""} will not be scored.
+                  Your debrief covers the answers so far.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => setShowEndModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-line bg-surface text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer min-h-[44px] sm:min-h-[40px]"
+              >
+                Keep answering
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleEndSessionEarly()}
+                className="flex-1 py-2.5 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition cursor-pointer min-h-[44px] sm:min-h-[40px]"
+              >
+                End round &amp; view debrief
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Primary Interaction Controls */}
         {!(isPractice && turnEvaluation) && (
-          <div className="w-full max-w-md mx-auto flex flex-col items-center gap-2.5">
+          <div className="w-full max-w-md mx-auto flex flex-col items-center gap-2.5 pb-[max(env(safe-area-inset-bottom),var(--kb,0px))] sm:pb-0">
             {!useTypedMode ? (
               <div className="w-full flex flex-col items-center gap-2.5">
                 <div className="w-full flex justify-center">
@@ -993,7 +1114,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                 <button
                   type="button"
                   onClick={() => setUseTypedMode(true)}
-                  className="text-[11px] text-ink-tertiary hover:text-ink-secondary transition flex items-center gap-1.5 cursor-pointer min-h-[38px] px-3"
+                  className="text-[11px] text-ink-tertiary hover:text-ink-secondary transition flex items-center gap-1.5 cursor-pointer min-h-[44px] sm:min-h-[38px] px-3"
                 >
                   <Keyboard className="w-3 h-3" />
                   <span>Type answer instead</span>
@@ -1001,40 +1122,80 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
               </div>
             ) : (
               <form onSubmit={handleTypedSubmit} className="w-full space-y-2">
-                <div className="relative">
+                <div className="rounded-2xl bg-surface border border-line shadow-sm focus-within:ring-1 focus-within:ring-accent/40 transition">
+                  <div className="flex items-center justify-between gap-2 px-3.5 sm:px-4 pt-2.5">
+                    <label
+                      htmlFor="studio-answer"
+                      className="text-[10px] font-semibold uppercase tracking-wider text-ink-secondary"
+                    >
+                      Your answer
+                    </label>
+                    <span className="flex items-center gap-1.5 text-[10px] text-ink-secondary">
+                      <span className="tabular">
+                        {typedWordCount} {typedWordCount === 1 ? "word" : "words"}
+                      </span>
+                      {draftSaved && (
+                        <span role="status" className="text-ink-secondary">
+                          · Draft saved
+                        </span>
+                      )}
+                    </span>
+                  </div>
                   <textarea
+                    id="studio-answer"
                     rows={3}
                     required
                     value={typedAnswer}
                     onChange={(e) => setTypedAnswer(e.target.value)}
+                    onFocus={() => {
+                      // On phones the keyboard eats the viewport, so keep the
+                      // question to two lines while typing. Reversible.
+                      if (window.matchMedia("(max-width: 639px)").matches) {
+                        setQuestionExpanded(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                        e.preventDefault();
+                        void submitTypedAnswer();
+                      }
+                    }}
                     placeholder="Type your answer here..."
-                    className="w-full p-3.5 sm:p-4 bg-surface border border-line rounded-2xl text-base sm:text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none shadow-sm"
+                    className="w-full px-3.5 sm:px-4 pt-1.5 pb-1 bg-transparent border-0 text-base sm:text-sm text-ink focus:outline-none resize-none"
                   />
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center justify-between gap-2 px-2 sm:px-3 pb-2">
                     <button
                       type="button"
-                      onClick={() => setUseTypedMode(false)}
-                      className="text-[11px] text-ink-tertiary hover:text-ink px-2 py-1.5 min-h-[36px]"
+                      onClick={() => {
+                        setUseTypedMode(false);
+                        setQuestionExpanded(true);
+                      }}
+                      className="text-[11px] text-ink-secondary hover:text-ink px-2 py-1.5 min-h-[44px] sm:min-h-[36px] cursor-pointer"
                     >
                       Use voice
                     </button>
-                    <button
-                      type="submit"
-                      disabled={isEvaluating || !typedAnswer.trim()}
-                      className="px-4 py-2 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 font-semibold text-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer min-h-[40px]"
-                    >
-                      {isEvaluating ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Evaluating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Submit Answer</span>
-                          <Send className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden sm:inline text-[10px] text-ink-secondary">
+                        ⌘↵ to submit
+                      </span>
+                      <button
+                        type="submit"
+                        disabled={isEvaluating || !typedAnswer.trim()}
+                        className="px-4 py-2 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 font-semibold text-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer min-h-[44px] sm:min-h-[40px]"
+                      >
+                        {isEvaluating ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Evaluating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Submit Answer</span>
+                            <Send className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>
@@ -1042,37 +1203,6 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           </div>
         )}
       </main>
-
-      {/* Early Exit Confirmation Modal */}
-      {showEndModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-line rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="w-10 h-10 rounded-2xl bg-warning-subtle border border-warning/30 flex items-center justify-center text-warning-ink">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-ink">Wrap up this round early?</h3>
-              <p className="text-xs text-ink-tertiary leading-relaxed mt-1">
-                We will save your answers so far and prepare your feedback debrief. You will not lose any progress.
-              </p>
-            </div>
-            <div className="flex gap-2.5 pt-1">
-              <button
-                onClick={() => setShowEndModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer"
-              >
-                Keep practicing
-              </button>
-              <button
-                onClick={handleEndSessionEarly}
-                className="flex-1 py-2.5 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition cursor-pointer"
-              >
-                Save & view feedback
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
