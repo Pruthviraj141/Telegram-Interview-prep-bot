@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type { CandidateUser } from "@/lib/api";
-import { ChevronRight, KeyRound, Menu, Mic, X } from "lucide-react";
+import { ChevronRight, KeyRound, Menu, Mic, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -14,15 +15,39 @@ import {
   type NavItem,
 } from "@/components/shell/nav-items";
 
+/** Separate chunk: the palette is only fetched after the first ⌘K. */
+const CommandPalette = dynamic(
+  () => import("@/components/CommandPalette").then((m) => m.CommandPalette),
+  { ssr: false },
+);
+
 interface NavbarProps {
   user?: CandidateUser | null;
 }
 
 const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...SECONDARY_NAV];
 
+const PALETTE_ITEMS = [
+  ...ALL_NAV.map((item) => ({ label: item.label, href: item.href })),
+  { label: "Start a new interview", href: "/interview" },
+];
+
 export const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setMenuOpen(false);
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const initials = (user?.display_name || user?.email || "C")[0].toUpperCase();
 
@@ -97,6 +122,21 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
           </nav>
 
           <div className="ml-auto flex min-w-0 items-center gap-1.5 lg:ml-0">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Search pages and actions"
+              className="hidden items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink-secondary transition-colors hover:bg-surface-sunken hover:text-ink lg:inline-flex"
+            >
+              <Search aria-hidden="true" className="h-3.5 w-3.5" />
+              <span>Search</span>
+              {/* Visual-only shortcut hint: the button's name stays "Search …". */}
+              <kbd
+                aria-hidden="true"
+                className="rounded border border-line px-1 py-0.5 text-[10px] leading-none after:content-['⌘K']"
+              />
+            </button>
+
             {user?.groq_key_configured ? (
               <span className="hidden max-w-[9rem] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-secondary sm:inline-flex">
                 <span
@@ -230,6 +270,13 @@ export const Navbar: React.FC<NavbarProps> = ({ user }) => {
           })}
         </ul>
       </nav>
+
+      {paletteOpen ? (
+        <CommandPalette
+          items={PALETTE_ITEMS}
+          onClose={() => setPaletteOpen(false)}
+        />
+      ) : null}
     </>
   );
 };
