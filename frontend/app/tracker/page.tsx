@@ -1,17 +1,43 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
+import React, { useEffect, useState } from "react";
+import { AppShell } from "@/components/shell/AppShell";
 import { api, CandidateUser } from "@/lib/api";
-import { Briefcase, Plus, Calendar, Building2, Trash2, Edit2, ArrowRight, RefreshCw, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
+import {
+  Briefcase,
+  Plus,
+  Calendar,
+  Trash2,
+  X,
+  AlertCircle,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Spinner } from "@/components/ui/spinner";
 
 const COLUMNS = ["Wishlist", "Applied", "Interviewing", "Offer", "Rejected"];
 
+interface TrackerItem {
+  id: string;
+  company: string;
+  role: string;
+  status: string;
+  deadline?: string | null;
+  notes?: string | null;
+}
+
 export default function TrackerPage() {
   const [user, setUser] = useState<CandidateUser | null>(null);
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<TrackerItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Mobile active tab view
   const [mobileActiveStage, setMobileActiveStage] = useState<string>("Applied");
@@ -24,29 +50,61 @@ export default function TrackerPage() {
   const [deadline, setDeadline] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const u = await api.getMe();
-      setUser(u);
-      const data = await api.listTrackerItems();
-      setItems(data);
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
+  const [reloadToken, setReloadToken] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTracker() {
+      try {
+        const u = await api.getMe();
+        if (cancelled) return;
+        setUser(u);
+        const data = await api.listTrackerItems();
+        if (cancelled) return;
+        setItems(data);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setLoadError(
+            getErrorMessage(err, "Could not load your applications right now."),
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+    void loadTracker();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setLoadError(null);
+    setReloadToken((token) => token + 1);
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!isModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isModalOpen]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSaveError(null);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!company.trim() || !role.trim()) return;
     setSaving(true);
+    setSaveError(null);
     try {
       await api.createTrackerItem({
         company,
@@ -58,256 +116,389 @@ export default function TrackerPage() {
       setIsModalOpen(false);
       setCompany("");
       setRole("");
+      setDeadline("");
       setNotes("");
-      await loadData();
+      setReloadToken((token) => token + 1);
+    } catch (err: unknown) {
+      setSaveError(
+        getErrorMessage(err, "Could not save that application. Nothing was added."),
+      );
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (itemId: string) => {
+  const handleDelete = async (item: TrackerItem) => {
+    setDeletingId(item.id);
+    setActionError(null);
     try {
-      await api.deleteTrackerItem(itemId);
-      setItems(items.filter((it) => it.id !== itemId));
-    } catch {
-      // ignore
+      await api.deleteTrackerItem(item.id);
+      setItems((prev) => prev.filter((it) => it.id !== item.id));
+    } catch (err: unknown) {
+      setActionError(
+        getErrorMessage(err, `Could not remove ${item.company}. Nothing was deleted.`),
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans">
-      <Navbar user={user} />
+    <AppShell user={user} width="wide" contentClassName="space-y-6 sm:space-y-8">
+      <PageHeader
+        eyebrow="Placement tracker"
+        title="Applications"
+        description="Track job opportunities, interview rounds, and offer deadlines."
+        actions={
+          <Button onClick={() => setIsModalOpen(true)}>
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            <span>Add application</span>
+          </Button>
+        }
+      />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
-              Applications
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Track job opportunities, interview rounds, and offer deadlines.
-            </p>
-          </div>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold transition flex items-center justify-center gap-2 shadow-xs cursor-pointer min-h-[44px]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Application</span>
-          </button>
+      {loadError && (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 rounded-xl border border-danger/30 bg-danger-subtle p-4 text-sm text-danger-ink sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {loadError}
+          </span>
+          <Button variant="secondary" size="sm" onClick={handleRetry}>
+            Try again
+          </Button>
         </div>
+      )}
 
-        {/* Mobile Stage Segmented Filter (Optimized for 360px & 390px screens) */}
-        <div className="flex md:hidden overflow-x-auto gap-1.5 pb-2 studio-scroll">
-          {COLUMNS.map((col) => {
-            const count = items.filter((it) => it.status === col).length;
-            const isActive = mobileActiveStage === col;
-            return (
-              <button
-                key={col}
-                type="button"
-                onClick={() => setMobileActiveStage(col)}
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 rounded-xl border border-danger/30 bg-danger-subtle p-4 text-sm text-danger-ink"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {actionError}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Dismiss error"
+            onClick={() => setActionError(null)}
+            className="shrink-0 text-danger-ink hover:bg-danger/10 hover:text-danger-ink"
+          >
+            <X aria-hidden="true" className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile stage filter */}
+      <div
+        role="group"
+        aria-label="Filter applications by stage"
+        className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-2 md:hidden"
+      >
+        {COLUMNS.map((col) => {
+          const count = items.filter((it) => it.status === col).length;
+          const isActive = mobileActiveStage === col;
+          return (
+            <button
+              key={col}
+              type="button"
+              onClick={() => setMobileActiveStage(col)}
+              aria-pressed={isActive}
+              className={cn(
+                "flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors",
+                isActive
+                  ? "border-transparent bg-accent-strong text-on-accent"
+                  : "border-line bg-surface-sunken text-ink-secondary hover:border-line-strong",
+              )}
+            >
+              <span>{col}</span>
+              <span
                 className={cn(
-                  "px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0",
+                  "tabular rounded-full px-1.5 text-[10px] font-bold leading-5",
                   isActive
-                    ? "bg-[#202124] text-white shadow-xs"
-                    : "bg-[#F7F7F5] text-slate-600 border border-[#E6E6E4]"
+                    ? "bg-on-accent/20 text-on-accent"
+                    : "border border-line bg-surface text-ink-tertiary",
                 )}
               >
-                <span>{col}</span>
-                <span className={cn("text-[10px] px-1.5 py-0.2 rounded-full", isActive ? "bg-white/20 text-white" : "bg-white text-slate-500 border border-[#E6E6E4]")}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-24">
+          <Spinner size="lg" label="Loading applications…" />
         </div>
-
-        {/* Board / Kanban View */}
-        {loading ? (
-          <div className="py-24 flex justify-center">
-            <RefreshCw className="w-6 h-6 text-[#202124] animate-spin" />
-          </div>
-        ) : (
-          <div>
-            {/* Desktop 5-Column Grid */}
-            <div className="hidden md:grid md:grid-cols-5 gap-4 overflow-x-auto pb-4">
-              {COLUMNS.map((col) => {
-                const colItems = items.filter((it) => it.status === col);
-                return (
-                  <div key={col} className="bg-[#F7F7F5] rounded-2xl p-4 flex flex-col min-w-[210px] border border-[#E6E6E4]">
-                    <div className="flex items-center justify-between mb-3.5 px-1">
-                      <span className="text-xs font-semibold tracking-tight text-[#202124]">{col}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-white border border-[#E6E6E4] text-[10px] font-bold text-slate-600">
-                        {colItems.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 flex-1">
-                      {colItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="bg-white border border-[#E6E6E4] rounded-xl p-3.5 shadow-xs hover:border-slate-300 transition space-y-2 group"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-semibold text-xs text-[#202124]">{item.company}</div>
-                              <div className="text-[11px] text-slate-500">{item.role}</div>
-                            </div>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition p-1 cursor-pointer"
-                              title="Delete opportunity"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {item.deadline && (
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-700 bg-[#F7F7F5] px-2 py-1 rounded-lg border border-[#E6E6E4] font-medium">
-                              <Calendar className="w-3 h-3 text-slate-400" />
-                              <span>{item.deadline}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-
-                      {colItems.length === 0 && (
-                        <div className="border border-dashed border-[#E6E6E4] rounded-xl p-5 text-center text-[11px] text-slate-400">
-                          Empty
-                        </div>
-                      )}
-                    </div>
+      ) : items.length === 0 && !loadError ? (
+        <EmptyState
+          icon={Briefcase}
+          title="No applications tracked yet"
+          description="Add the roles you are pursuing to keep deadlines and stages in one place."
+          action={
+            <Button onClick={() => setIsModalOpen(true)}>
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              <span>Add your first application</span>
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {/* Desktop board */}
+          <div className="hidden gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-5">
+            {COLUMNS.map((col) => {
+              const colItems = items.filter((it) => it.status === col);
+              return (
+                <div
+                  key={col}
+                  className="flex min-w-[200px] flex-col rounded-card border border-line bg-surface-sunken p-3"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2 px-1">
+                    <span className="text-xs font-semibold text-ink">{col}</span>
+                    <Badge variant="neutral" className="tabular">
+                      {colItems.length}
+                    </Badge>
                   </div>
-                );
-              })}
-            </div>
 
-            {/* Mobile Active Stage Cards List */}
-            <div className="md:hidden space-y-3">
-              {items
-                .filter((it) => it.status === mobileActiveStage)
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white border border-[#E6E6E4] rounded-xl p-4 shadow-xs space-y-2"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-semibold text-sm text-[#202124]">{item.company}</div>
-                        <div className="text-xs text-slate-500">{item.role}</div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-slate-400 hover:text-rose-500 transition p-1 cursor-pointer"
+                  <div className="flex-1 space-y-2.5">
+                    {colItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="group space-y-2 rounded-xl border border-line bg-surface p-3 transition-colors hover:border-line-strong"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-xs font-semibold text-ink">
+                              {item.company}
+                            </div>
+                            <div className="truncate text-[11px] text-ink-secondary">
+                              {item.role}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Delete ${item.company} — ${item.role}`}
+                            onClick={() => handleDelete(item)}
+                            loading={deletingId === item.id}
+                            className="-mr-1 -mt-1 h-7 w-7 shrink-0 text-ink-tertiary opacity-0 transition-opacity hover:text-danger-ink focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                          >
+                            <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
 
-                    {item.deadline && (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-[#F7F7F5] px-2.5 py-1 rounded-lg border border-[#E6E6E4] font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Deadline: {item.deadline}</span>
+                        {item.deadline && (
+                          <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-sunken px-2 py-1 text-[10px] font-medium text-ink-secondary">
+                            <Calendar
+                              aria-hidden="true"
+                              className="h-3 w-3 text-ink-tertiary"
+                            />
+                            <span>{item.deadline}</span>
+                          </div>
+                        )}
+
+                        {item.notes && (
+                          <p className="line-clamp-3 text-[11px] leading-relaxed text-ink-secondary">
+                            {item.notes}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+
+                    {colItems.length === 0 && (
+                      <div className="rounded-xl border border-dashed border-line p-5 text-center text-[11px] text-ink-tertiary">
+                        Nothing here
                       </div>
                     )}
                   </div>
-                ))}
-
-              {items.filter((it) => it.status === mobileActiveStage).length === 0 && (
-                <div className="bg-white border border-[#E6E6E4] rounded-xl p-8 text-center text-xs text-slate-400">
-                  No applications in {mobileActiveStage}.
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
-        )}
-      </main>
 
-      {/* Add Modal */}
+          {/* Mobile stage list */}
+          <div className="space-y-3 md:hidden">
+            {items
+              .filter((it) => it.status === mobileActiveStage)
+              .map((item) => (
+                <Card key={item.id} className="space-y-2 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-ink">
+                        {item.company}
+                      </div>
+                      <div className="truncate text-xs text-ink-secondary">
+                        {item.role}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete ${item.company} — ${item.role}`}
+                      onClick={() => handleDelete(item)}
+                      loading={deletingId === item.id}
+                      className="-mr-1 -mt-1 shrink-0 text-ink-tertiary hover:text-danger-ink"
+                    >
+                      <Trash2 aria-hidden="true" className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {item.deadline && (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface-sunken px-2.5 py-1 text-xs font-medium text-ink-secondary">
+                      <Calendar
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 text-ink-tertiary"
+                      />
+                      <span>Deadline: {item.deadline}</span>
+                    </div>
+                  )}
+
+                  {item.notes && (
+                    <p className="text-xs leading-relaxed text-ink-secondary">
+                      {item.notes}
+                    </p>
+                  )}
+                </Card>
+              ))}
+
+            {items.filter((it) => it.status === mobileActiveStage).length ===
+              0 && (
+              <EmptyState
+                title={`No applications in ${mobileActiveStage}`}
+                description="Switch stages above or add a new application."
+              />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Add application dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-100">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-[#202124]">Add Application</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-black">
-                <X className="w-4 h-4" />
-              </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-application-title"
+            className="w-full max-w-md space-y-5 rounded-2xl border border-line bg-surface p-6 shadow-overlay sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2
+                  id="add-application-title"
+                  className="font-serif text-lg font-medium text-ink"
+                >
+                  Add application
+                </h2>
+                <p className="mt-1 text-xs text-ink-secondary">
+                  Only what you enter is stored. Deadlines are optional.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Close dialog"
+                onClick={closeModal}
+                className="-mr-2 -mt-2 shrink-0 text-ink-tertiary"
+              >
+                <X aria-hidden="true" className="h-4 w-4" />
+              </Button>
             </div>
 
-            <form onSubmit={handleCreate} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-medium text-slate-700 mb-1">Company</label>
-                <input
+            <form onSubmit={handleCreate} className="space-y-4">
+              <Field label="Company" required>
+                <Input
                   type="text"
-                  required
                   placeholder="e.g. Google, Amazon"
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#202124]"
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label className="block font-medium text-slate-700 mb-1">Role</label>
-                <input
+              <Field label="Role" required>
+                <Input
                   type="text"
-                  required
                   placeholder="e.g. Software Engineer"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#202124]"
                 />
-              </div>
+              </Field>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">Stage</label>
-                  <select
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Stage">
+                  <Select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-300 rounded-xl bg-white text-base sm:text-xs"
                   >
                     {COLUMNS.map((col) => (
                       <option key={col} value={col}>
                         {col}
                       </option>
                     ))}
-                  </select>
-                </div>
+                  </Select>
+                </Field>
 
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">Deadline</label>
-                  <input
+                <Field label="Deadline" hint="Optional">
+                  <Input
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white text-slate-700 text-base sm:text-xs"
                   />
-                </div>
+                </Field>
               </div>
 
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-[#E6E6E4] text-[#5F6368] font-semibold hover:bg-[#F7F7F5] transition min-h-[44px]"
+              <Field label="Notes" hint="Optional — rounds, contacts, next steps">
+                <Textarea
+                  rows={3}
+                  placeholder="e.g. Recruiter screen booked for Tuesday"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </Field>
+
+              {saveError && (
+                <p
+                  role="alert"
+                  className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger-subtle p-3 text-xs text-danger-ink"
+                >
+                  <AlertCircle
+                    aria-hidden="true"
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                  />
+                  {saveError}
+                </p>
+              )}
+
+              <div className="flex gap-2.5 pt-1">
+                <Button
+                  variant="secondary"
+                  onClick={closeModal}
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={saving || !company.trim() || !role.trim()}
-                  className="flex-1 py-2.5 rounded-xl bg-[#202124] hover:bg-[#111113] text-white font-semibold transition disabled:opacity-50 cursor-pointer min-h-[44px]"
+                  loading={saving}
+                  disabled={!company.trim() || !role.trim()}
+                  className="flex-1"
                 >
-                  {saving ? "Saving..." : "Add"}
-                </button>
+                  {saving ? "Saving…" : "Add application"}
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }

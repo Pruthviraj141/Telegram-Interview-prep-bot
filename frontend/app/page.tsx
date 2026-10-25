@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
+import { AppShell } from "@/components/shell/AppShell";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { DashboardView } from "@/components/DashboardView";
 import { api, CandidateUser } from "@/lib/api";
-import { RefreshCw } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function HomePage() {
   const [user, setUser] = useState<CandidateUser | null>(null);
@@ -36,10 +36,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
-        <span className="text-xs font-medium text-[#5F6368]">
-          Loading dashboard...
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <Spinner size="md" />
+        <span className="text-xs font-medium text-ink-secondary">
+          Loading dashboard…
         </span>
       </div>
     );
@@ -47,17 +47,19 @@ export default function HomePage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
-          <div className="text-[#C4744B] font-semibold text-sm">Connection Warning</div>
-          <p className="text-xs text-[#5F6368] leading-relaxed">
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-4 rounded-card border border-line bg-surface p-8 text-center shadow-card">
+          <div className="text-sm font-semibold text-warning-ink">
+            Connection warning
+          </div>
+          <p className="text-xs leading-relaxed text-ink-secondary">
             {error || "Could not connect to the backend server. Please verify the service is running."}
           </p>
           <button
             onClick={loadData}
-            className="w-full py-2.5 bg-[#202124] text-white rounded-xl text-xs font-semibold hover:bg-black transition cursor-pointer"
+            className="w-full cursor-pointer rounded-lg bg-accent-strong py-2.5 text-xs font-semibold text-on-accent transition-colors hover:bg-accent-strong/90"
           >
-            Retry Connection
+            Retry connection
           </button>
         </div>
       </div>
@@ -65,15 +67,12 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <Navbar user={user} />
-      <main className="flex-1">
-        {user.onboarding_state !== "COMPLETED" ? (
-          <OnboardingWizard initialUser={user} onComplete={loadData} />
-        ) : (
-          <DashboardView user={user} dashboardData={dashboardData} />
-        )}
-      </main>
-    </div>
+    <AppShell user={user} width="wide">
+      {user.onboarding_state !== "COMPLETED" ? (
+        <OnboardingWizard initialUser={user} onComplete={loadData} />
+      ) : (
+        <DashboardView user={user} dashboardData={dashboardData} />
+      )}
+    </AppShell>
   );
 }

@@ -501,31 +501,32 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   return (
     <div
       className={cn(
-        "min-h-screen bg-[#141416] text-[#F3F3F5] flex flex-col justify-between selection:bg-[#C4744B] selection:text-white transition-all relative overflow-hidden font-sans",
+        "studio min-h-screen bg-canvas text-ink flex flex-col justify-between selection:bg-accent-subtle selection:text-ink transition-all relative overflow-hidden font-sans",
         isFullscreen && "fixed inset-0 z-50 overflow-y-auto"
       )}
     >
       {/* Top Studio Control Bar */}
-      <header className="relative z-20 border-b border-[#2A2A30] bg-[#141416]/95 backdrop-blur-md px-3 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
+      <header className="relative z-20 border-b border-line bg-canvas/95 backdrop-blur-md px-3 sm:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => setShowEndModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-slate-300 text-xs font-medium transition cursor-pointer shrink-0"
+            aria-label="Exit round"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-ink-secondary text-xs font-medium transition cursor-pointer shrink-0"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Exit</span>
           </button>
 
-          <div className="h-4 w-px bg-[#2E2E35] shrink-0" />
+          <div className="h-4 w-px bg-line shrink-0" />
 
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span className="text-xs font-semibold text-white tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">
+            <span className="text-xs font-semibold text-ink tracking-tight truncate max-w-[104px] sm:max-w-none">
               {session.blueprint?.target_role || session.target_role || "Interview"}
             </span>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-300 border border-white/10 shrink-0">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-raised text-ink-secondary border border-line shrink-0">
               Q{currentTurn.turn_index + 1}/{targetQuestions}
             </span>
-            <span className="hidden sm:inline text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-slate-300 border border-white/10 shrink-0 capitalize">
+            <span className="hidden sm:inline text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface-raised text-ink-secondary border border-line shrink-0 capitalize">
               {session.mode}
             </span>
           </div>
@@ -536,19 +537,19 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           <div className="relative">
             <button
               onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-xs font-medium text-slate-300 transition cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl bg-surface hover:bg-surface-raised border border-line text-xs font-medium text-ink-secondary transition cursor-pointer"
               title="Change neural voice"
             >
-              <Volume2 className="w-3.5 h-3.5 text-slate-300" />
+              <Volume2 className="w-3.5 h-3.5 text-ink-secondary" />
               <span className="hidden md:inline">{currentVoice?.name || "Neural Voice"}</span>
-              <Settings2 className="w-3 h-3 text-slate-500 ml-0.5" />
+              <Settings2 className="w-3 h-3 text-ink-tertiary ml-0.5" />
             </button>
 
             {showVoiceSettings && (
-              <div className="absolute right-0 mt-2 w-72 p-3 bg-[#1E1E22] border border-[#2E2E35] rounded-2xl shadow-2xl z-50 space-y-3 animate-in fade-in zoom-in-95 duration-100">
-                <div className="flex items-center justify-between pb-2 border-b border-[#2E2E35]">
-                  <span className="text-xs font-semibold text-white tracking-tight">Neural Recruiter Voice</span>
-                  <button onClick={() => setShowVoiceSettings(false)} className="text-slate-400 hover:text-white">
+              <div className="absolute right-0 mt-2 w-72 p-3 bg-surface border border-line rounded-2xl shadow-2xl z-50 space-y-3 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center justify-between pb-2 border-b border-line">
+                  <span className="text-xs font-semibold text-ink tracking-tight">Neural Recruiter Voice</span>
+                  <button onClick={() => setShowVoiceSettings(false)} className="text-ink-tertiary hover:text-ink">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -565,21 +566,21 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                       className={cn(
                         "w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between cursor-pointer",
                         selectedVoiceId === v.id
-                          ? "bg-white/[0.08] text-white border border-white/20 font-medium"
-                          : "hover:bg-white/[0.04] text-slate-400 hover:text-slate-200"
+                          ? "bg-surface-raised text-ink border border-line-strong font-medium"
+                          : "hover:bg-surface-raised text-ink-tertiary hover:text-ink"
                       )}
                     >
                       <div>
-                        <div className="font-medium text-white">{v.name}</div>
-                        <div className="text-[10px] text-slate-400">{v.style}</div>
+                        <div className="font-medium text-ink">{v.name}</div>
+                        <div className="text-[10px] text-ink-tertiary">{v.style}</div>
                       </div>
-                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-black/40 text-slate-400">{v.tag}</span>
+                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-canvas-subtle text-ink-tertiary">{v.tag}</span>
                     </button>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-[#2E2E35]">
-                  <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                <div className="pt-2 border-t border-line">
+                  <div className="flex justify-between text-[11px] text-ink-tertiary mb-1">
                     <span>Pacing</span>
                     <span>{voiceSpeed}x</span>
                   </div>
@@ -590,7 +591,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     step="0.05"
                     value={voiceSpeed}
                     onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
-                    className="w-full accent-white cursor-pointer"
+                    className="w-full accent-[var(--accent)] cursor-pointer"
                   />
                 </div>
               </div>
@@ -606,8 +607,8 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             className={cn(
               "w-8 h-8 rounded-xl border text-xs flex items-center justify-center transition cursor-pointer",
               isMuted
-                ? "bg-rose-500/15 border-rose-500/30 text-rose-300"
-                : "bg-[#1E1E22] border-[#2E2E35] text-slate-300 hover:bg-[#26262B]"
+                ? "bg-danger-subtle border-danger/30 text-danger-ink"
+                : "bg-surface border-line text-ink-secondary hover:bg-surface-raised"
             )}
             title={isMuted ? "Unmute AI Voice" : "Mute AI Voice"}
           >
@@ -620,8 +621,8 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             className={cn(
               "flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl border text-xs font-medium transition cursor-pointer",
               scratchpadOpen
-                ? "bg-white text-black border-white shadow-xs"
-                : "bg-[#1E1E22] border-[#2E2E35] text-slate-300 hover:bg-[#26262B]"
+                ? "bg-accent-strong text-on-accent border-accent-line shadow-xs"
+                : "bg-surface border-line text-ink-secondary hover:bg-surface-raised"
             )}
             title="Technical Notes & Architecture Scratchpad"
           >
@@ -632,7 +633,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           {/* Fullscreen Toggle (desktop only) */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="hidden sm:flex w-8 h-8 rounded-xl bg-[#1E1E22] hover:bg-[#26262B] border border-[#2E2E35] text-slate-300 items-center justify-center transition cursor-pointer"
+            className="hidden sm:flex w-8 h-8 rounded-xl bg-surface hover:bg-surface-raised border border-line text-ink-secondary items-center justify-center transition cursor-pointer"
             title="Toggle Fullscreen"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -644,12 +645,12 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       <main className="relative z-10 flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-6 py-4 sm:py-8 flex flex-col items-center justify-between gap-4 sm:gap-6 pb-safe">
         {/* Error Alert */}
         {errorMsg && (
-          <div className="w-full p-3 sm:p-4 rounded-2xl bg-rose-950/40 border border-rose-800/60 text-rose-200 text-xs flex items-center justify-between shadow-sm">
+          <div className="w-full p-3 sm:p-4 rounded-2xl bg-danger-subtle border border-danger/40 text-danger-ink text-xs flex items-center justify-between gap-3 shadow-sm">
             <div className="flex items-center gap-2.5 min-w-0">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-danger shrink-0" />
               <span className="truncate">{errorMsg}</span>
             </div>
-            <button onClick={() => setErrorMsg(null)} className="text-rose-400 hover:text-white text-xs underline ml-3 shrink-0 cursor-pointer">
+            <button onClick={() => setErrorMsg(null)} className="text-danger-ink hover:text-ink text-xs underline shrink-0 cursor-pointer">
               Dismiss
             </button>
           </div>
@@ -661,19 +662,19 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
         </div>
 
         {/* Interviewer Question Module */}
-        <div className="w-full bg-[#1C1C1F] border border-[#2E2E35] rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-lg text-center space-y-3 sm:space-y-4">
+        <div className="w-full bg-surface border border-line rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-lg text-center space-y-3 sm:space-y-4">
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-slate-300 text-[10px] font-semibold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-line text-ink-secondary text-[10px] font-semibold uppercase tracking-wider">
               {currentTurn.category}
             </span>
             {currentTurn.is_follow_up && (
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-semibold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 rounded-full bg-accent-subtle border border-accent-line text-accent-strong text-[10px] font-semibold uppercase tracking-wider">
                 Follow-Up Probe
               </span>
             )}
           </div>
 
-          <h2 className="text-sm sm:text-xl font-medium sm:font-semibold text-white leading-relaxed tracking-tight max-w-2xl mx-auto">
+          <h2 className="font-question text-ink max-w-2xl mx-auto">
             {currentTurn.question_text}
           </h2>
 
@@ -685,17 +686,17 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                   speechSynth.unlockAudio();
                   speakText(currentTurn.question_text);
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#FAF2ED] hover:bg-[#F3E3D7] text-[#B3582A] text-xs font-semibold shadow-md transition cursor-pointer animate-bounce"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-warning-subtle hover:bg-warning-subtle/70 text-warning-ink text-xs font-semibold shadow-md transition cursor-pointer animate-bounce"
               >
-                <Volume2 className="w-4 h-4 text-[#B3582A]" />
+                <Volume2 className="w-4 h-4 text-warning-ink" />
                 <span>Tap to Hear Question</span>
               </button>
             ) : (
               <button
                 onClick={() => speakText(currentTurn.question_text)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#26262B] hover:bg-[#2E2E35] border border-[#383842] text-slate-300 text-xs transition cursor-pointer min-h-[36px]"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[36px]"
               >
-                <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+                <Volume2 className="w-3.5 h-3.5 text-ink-tertiary" />
                 <span>Replay Question</span>
               </button>
             )}
@@ -711,19 +712,19 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     setHintRevealed(true);
                     setHintUsed(true);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#26262B] hover:bg-[#2E2E35] border border-[#383842] text-slate-300 text-xs transition cursor-pointer min-h-[36px]"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-raised hover:bg-line/60 border border-line text-ink-secondary text-xs transition cursor-pointer min-h-[36px]"
                 >
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
+                  <Lightbulb className="w-3.5 h-3.5 text-warning-ink" />
                   <span>Show rubric guidance</span>
                 </button>
               ) : (
-                <div className="text-left p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-1">
-                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-300">
+                <div className="text-left p-3 rounded-xl bg-warning-subtle border border-warning/30 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-warning-ink">
                     <Lightbulb className="w-3 h-3" />
                     <span>Rubric guidance — not a model answer</span>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">{hintText}</p>
-                  <p className="text-[10px] text-slate-500">Using a hint is recorded in your practice assistance log.</p>
+                  <p className="text-xs text-ink-secondary leading-relaxed">{hintText}</p>
+                  <p className="text-[10px] text-ink-tertiary">Using a hint is recorded in your practice assistance log.</p>
                 </div>
               )}
             </div>
@@ -732,14 +733,14 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
           {/* Honest provenance / source panel */}
           {showProvenance && (
             <details className="text-left pt-1 group">
-              <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition">
+              <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 text-[11px] text-ink-tertiary hover:text-ink transition">
                 <BookOpen className="w-3 h-3" />
                 <span>Where this question comes from</span>
               </summary>
-              <div className="mt-2 p-3 rounded-xl bg-black/30 border border-white/5 space-y-2">
-                <p className="text-[11px] text-slate-300 leading-relaxed">{honestProvenanceNote(currentTurn)}</p>
+              <div className="mt-2 p-3 rounded-xl bg-canvas-subtle border border-line space-y-2">
+                <p className="text-[11px] text-ink-secondary leading-relaxed">{honestProvenanceNote(currentTurn)}</p>
                 {currentTurn.source_basis && (
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-ink-tertiary">
                     Basis: {SOURCE_BASIS_LABELS[currentTurn.source_basis] || currentTurn.source_basis}
                   </p>
                 )}
@@ -751,7 +752,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                           href={src.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-start gap-1.5 text-[11px] text-slate-300 hover:text-white underline decoration-slate-600 underline-offset-2"
+                          className="inline-flex items-start gap-1.5 text-[11px] text-ink-secondary hover:text-ink underline decoration-line-strong underline-offset-2"
                         >
                           <ExternalLink className="w-3 h-3 mt-0.5 shrink-0" />
                           <span>
@@ -770,21 +771,21 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
         {/* Practice Mode Coaching Feedback Panel (practice only, real fields) */}
         {isPractice && turnEvaluation && (
-          <div className="w-full p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-[#1C1C1F] border border-[#2E2E35] space-y-4 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-[#2E2E35]">
+          <div className="w-full p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-surface border border-line space-y-4 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-semibold text-white">Feedback on this answer</span>
+                <CheckCircle2 className="w-4 h-4 text-success" />
+                <span className="text-xs font-semibold text-ink">Feedback on this answer</span>
               </div>
-              <div className="px-2.5 py-0.5 rounded-full bg-[#FAF2ED]/15 border border-[#C4744B]/30 text-[#EED9CC] text-xs font-bold">
+              <div className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-line text-ink text-xs font-semibold tabular">
                 {scoreDisplay}
               </div>
             </div>
 
             {turnEvaluation.evidence_quote && (
-              <div className="text-xs text-slate-300 space-y-1">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">From your answer</span>
-                <blockquote className="border-l-2 border-[#C4744B]/50 pl-3 italic text-slate-300">
+              <div className="text-xs text-ink-secondary space-y-1">
+                <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">From your answer</span>
+                <blockquote className="border-l-2 border-accent-line pl-3 italic text-ink-secondary">
                   “{turnEvaluation.evidence_quote}”
                 </blockquote>
               </div>
@@ -792,8 +793,8 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
             {turnEvaluation.missing_points && turnEvaluation.missing_points.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-[#EED9CC] tracking-tight">Key points to mention:</span>
-                <ul className="text-xs text-slate-300 list-disc list-inside space-y-1">
+                <span className="text-[11px] font-semibold text-warning-ink tracking-tight">Key points to mention:</span>
+                <ul className="text-xs text-ink-secondary list-disc list-inside space-y-1">
                   {turnEvaluation.missing_points.map((pt: string, idx: number) => (
                     <li key={idx}>{pt}</li>
                   ))}
@@ -803,8 +804,8 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
             {turnEvaluation.misconceptions && turnEvaluation.misconceptions.length > 0 && (
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-amber-300 tracking-tight">What to correct:</span>
-                <ul className="text-xs text-slate-300 list-disc list-inside space-y-1">
+                <span className="text-[11px] font-semibold text-warning-ink tracking-tight">What to correct:</span>
+                <ul className="text-xs text-ink-secondary list-disc list-inside space-y-1">
                   {turnEvaluation.misconceptions.map((pt: string, idx: number) => (
                     <li key={idx}>{pt}</li>
                   ))}
@@ -813,43 +814,43 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             )}
 
             {turnEvaluation.stronger_answer && (
-              <div className="p-3.5 rounded-2xl bg-black/30 border border-white/5 text-xs text-slate-300 space-y-1">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">A stronger answer</span>
-                <p className="leading-relaxed text-slate-200">{turnEvaluation.stronger_answer}</p>
+              <div className="p-3.5 rounded-2xl bg-canvas-subtle border border-line text-xs text-ink-secondary space-y-1">
+                <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">A stronger answer</span>
+                <p className="leading-relaxed text-ink">{turnEvaluation.stronger_answer}</p>
                 {turnEvaluation.why_its_stronger && (
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{turnEvaluation.why_its_stronger}</p>
+                  <p className="text-[11px] text-ink-tertiary leading-relaxed">{turnEvaluation.why_its_stronger}</p>
                 )}
               </div>
             )}
 
             {(retryMessage || disputeMessage) && (
-              <p className="text-[11px] text-slate-400 leading-relaxed">{retryMessage || disputeMessage}</p>
+              <p className="text-[11px] text-ink-tertiary leading-relaxed">{retryMessage || disputeMessage}</p>
             )}
 
             {/* Retry / dispute forms (practice only) */}
             {showRetryForm && (
               <form onSubmit={handleRetry} className="space-y-2">
-                <label className="text-[11px] font-semibold text-slate-300">Your corrected answer</label>
+                <label className="text-[11px] font-semibold text-ink-secondary">Your corrected answer</label>
                 <textarea
                   rows={3}
                   required
                   value={retryAnswerText}
                   onChange={(e) => setRetryAnswerText(e.target.value)}
                   placeholder="Rewrite your answer using the feedback above..."
-                  className="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none"
+                  className="w-full p-3 bg-canvas-subtle border border-line rounded-xl text-base sm:text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowRetryForm(false)}
-                    className="flex-1 py-2 rounded-xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer"
+                    className="flex-1 py-2 rounded-xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isRetrying || !retryAnswerText.trim()}
-                    className="flex-1 py-2 rounded-xl bg-white hover:bg-slate-100 text-black text-xs font-semibold transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     {isRetrying ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     <span>{isRetrying ? "Re-evaluating..." : "Retry answer"}</span>
@@ -860,7 +861,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
             {showDisputeForm && (
               <form onSubmit={handleDispute} className="space-y-2">
-                <label className="text-[11px] font-semibold text-slate-300">
+                <label className="text-[11px] font-semibold text-ink-secondary">
                   What did the feedback miss or misread?
                 </label>
                 <textarea
@@ -869,20 +870,20 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                   value={disputeText}
                   onChange={(e) => setDisputeText(e.target.value)}
                   placeholder="Explain the point you actually made, or correct a transcription error..."
-                  className="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none"
+                  className="w-full p-3 bg-canvas-subtle border border-line rounded-xl text-base sm:text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setShowDisputeForm(false)}
-                    className="flex-1 py-2 rounded-xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer"
+                    className="flex-1 py-2 rounded-xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isDisputing || !disputeText.trim()}
-                    className="flex-1 py-2 rounded-xl bg-white hover:bg-slate-100 text-black text-xs font-semibold transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     {isDisputing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <MessageSquareWarning className="w-3.5 h-3.5" />}
                     <span>{isDisputing ? "Re-assessing..." : "Request re-assessment"}</span>
@@ -894,7 +895,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleAdvanceToNextTurn}
-                className="flex-1 py-3 rounded-2xl bg-white hover:bg-slate-100 text-black font-semibold text-xs transition shadow-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
+                className="flex-1 py-3 rounded-2xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 font-semibold text-xs transition shadow-sm flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
               >
                 <span>{pendingNextTurn ? "Next Question" : "View Debrief"}</span>
                 <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
@@ -907,7 +908,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     setShowRetryForm(true);
                     setShowDisputeForm(false);
                   }}
-                  className="py-3 px-4 rounded-2xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="py-3 px-4 rounded-2xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Retry</span>
@@ -920,7 +921,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     setShowDisputeForm(true);
                     setShowRetryForm(false);
                   }}
-                  className="py-3 px-4 rounded-2xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer flex items-center justify-center gap-1.5"
+                  className="py-3 px-4 rounded-2xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <MessageSquareWarning className="w-3.5 h-3.5" />
                   <span>Dispute</span>
@@ -932,10 +933,10 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
         {/* Technical Scratchpad (Expandable) */}
         {scratchpadOpen && (
-          <div className="w-full p-4 rounded-2xl sm:rounded-3xl bg-[#1C1C1F] border border-[#2E2E35] space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span className="font-semibold text-slate-200">Scratchpad</span>
-              <button onClick={() => setScratchpadOpen(false)} className="text-slate-400 hover:text-white">
+          <div className="w-full p-4 rounded-2xl sm:rounded-3xl bg-surface border border-line space-y-2">
+            <div className="flex items-center justify-between text-xs text-ink-tertiary">
+              <span className="font-semibold text-ink">Scratchpad</span>
+              <button onClick={() => setScratchpadOpen(false)} className="text-ink-tertiary hover:text-ink">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -944,9 +945,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
               value={scratchpadText}
               onChange={(e) => setScratchpadText(e.target.value)}
               placeholder="Notes, code, complexity trade-offs..."
-              className="w-full p-3 bg-black/40 border border-white/10 rounded-xl text-base sm:text-xs font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none"
+              className="w-full p-3 bg-canvas-subtle border border-line rounded-xl text-base sm:text-xs font-mono text-ink focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none"
             />
-            <p className="text-[10px] text-slate-500">Scratchpad use is recorded in your practice assistance log.</p>
+            <p className="text-[10px] text-ink-tertiary">Scratchpad use is recorded in your practice assistance log.</p>
           </div>
         )}
 
@@ -960,31 +961,31 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     <button
                       onClick={startRecording}
                       disabled={isEvaluating}
-                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-white hover:bg-slate-100 text-black font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px] disabled:opacity-50"
+                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-accent-strong text-on-accent hover:bg-accent-strong/90 font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px] disabled:opacity-50"
                     >
-                      <Mic className="w-4 h-4 text-black shrink-0" />
+                      <Mic className="w-4 h-4 text-on-accent shrink-0" />
                       <span>Answer by Voice</span>
                     </button>
                   ) : (
                     <button
                       onClick={stopRecordingAndSubmit}
-                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-[#C4744B] hover:bg-[#B3582A] text-white font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px]"
+                      className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-full bg-danger text-canvas hover:bg-danger/90 font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 cursor-pointer min-h-[48px] sm:min-h-[52px]"
                     >
-                      <Square className="w-4 h-4 fill-white text-white shrink-0" />
+                      <Square className="w-4 h-4 fill-current text-canvas shrink-0" />
                       <span>Submit Answer ({formatSeconds(recordingDuration)})</span>
                     </button>
                   )}
                 </div>
 
                 {isEvaluating && (
-                  <div className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400 font-medium">
+                  <div className="flex items-center gap-2 text-[11px] sm:text-xs text-ink-tertiary font-medium">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     <span>Evaluating answer...</span>
                   </div>
                 )}
 
                 {liveTranscriptPreview && (
-                  <p className="text-[11px] text-slate-400 text-center max-w-md line-clamp-2">
+                  <p className="text-[11px] text-ink-tertiary text-center max-w-md line-clamp-2">
                     Transcript: {liveTranscriptPreview}
                   </p>
                 )}
@@ -992,7 +993,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                 <button
                   type="button"
                   onClick={() => setUseTypedMode(true)}
-                  className="text-[11px] text-slate-500 hover:text-slate-300 transition flex items-center gap-1.5 cursor-pointer min-h-[38px] px-3"
+                  className="text-[11px] text-ink-tertiary hover:text-ink-secondary transition flex items-center gap-1.5 cursor-pointer min-h-[38px] px-3"
                 >
                   <Keyboard className="w-3 h-3" />
                   <span>Type answer instead</span>
@@ -1007,20 +1008,20 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                     value={typedAnswer}
                     onChange={(e) => setTypedAnswer(e.target.value)}
                     placeholder="Type your answer here..."
-                    className="w-full p-3.5 sm:p-4 bg-[#1C1C1F] border border-[#2E2E35] rounded-2xl text-base sm:text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none shadow-sm"
+                    className="w-full p-3.5 sm:p-4 bg-surface border border-line rounded-2xl text-base sm:text-xs text-ink focus:outline-none focus:ring-1 focus:ring-accent/40 resize-none shadow-sm"
                   />
                   <div className="flex items-center justify-between pt-1">
                     <button
                       type="button"
                       onClick={() => setUseTypedMode(false)}
-                      className="text-[11px] text-slate-400 hover:text-white px-2 py-1.5 min-h-[36px]"
+                      className="text-[11px] text-ink-tertiary hover:text-ink px-2 py-1.5 min-h-[36px]"
                     >
                       Use voice
                     </button>
                     <button
                       type="submit"
                       disabled={isEvaluating || !typedAnswer.trim()}
-                      className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-black font-semibold text-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer min-h-[40px]"
+                      className="px-4 py-2 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 font-semibold text-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer min-h-[40px]"
                     >
                       {isEvaluating ? (
                         <>
@@ -1045,26 +1046,26 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       {/* Early Exit Confirmation Modal */}
       {showEndModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1F] border border-[#2E2E35] rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <div className="bg-surface border border-line rounded-3xl p-6 sm:p-8 max-w-sm w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-10 h-10 rounded-2xl bg-warning-subtle border border-warning/30 flex items-center justify-center text-warning-ink">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-white">Wrap up this round early?</h3>
-              <p className="text-xs text-slate-400 leading-relaxed mt-1">
+              <h3 className="text-base font-semibold text-ink">Wrap up this round early?</h3>
+              <p className="text-xs text-ink-tertiary leading-relaxed mt-1">
                 We will save your answers so far and prepare your feedback debrief. You will not lose any progress.
               </p>
             </div>
             <div className="flex gap-2.5 pt-1">
               <button
                 onClick={() => setShowEndModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-[#2E2E35] text-slate-300 text-xs font-medium hover:bg-white/[0.04] transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl border border-line text-ink-secondary text-xs font-medium hover:bg-surface-raised transition cursor-pointer"
               >
                 Keep practicing
               </button>
               <button
                 onClick={handleEndSessionEarly}
-                className="flex-1 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-black text-xs font-semibold transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition cursor-pointer"
               >
                 Save & view feedback
               </button>

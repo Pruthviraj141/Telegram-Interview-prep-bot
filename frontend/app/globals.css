@@ -1,87 +1,366 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Calm precision — design tokens
+   Warm paper + ink + one cobalt accent. OKLCH so light and dark
+   stay perceptually consistent. Light is the workspace; the
+   studio is a dark stage regardless of the chosen theme.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: oklch(0.985 0.004 85);
+  --canvas-subtle: oklch(0.965 0.005 85);
+  --surface: oklch(1 0 0);
+  --surface-raised: oklch(1 0 0);
+  --surface-sunken: oklch(0.965 0.005 85);
+
+  /* Lines */
+  --line: oklch(0.9 0.005 85);
+  --line-strong: oklch(0.82 0.006 85);
+
+  /* Text */
+  --ink: oklch(0.2 0.02 265);
+  --ink-secondary: oklch(0.46 0.02 265);
+  --ink-tertiary: oklch(0.52 0.015 265);
+
+  /* Accent — .52 is the brand value; .46 is the AA-safe fill/text */
+  --accent: oklch(0.52 0.19 262);
+  --accent-strong: oklch(0.46 0.19 262);
+  --accent-subtle: oklch(0.96 0.02 262);
+  --accent-line: oklch(0.88 0.045 262);
+  --on-accent: oklch(1 0 0);
+
+  /* Semantic */
+  --success: oklch(0.55 0.13 155);
+  --success-ink: oklch(0.44 0.11 155);
+  --success-subtle: oklch(0.96 0.03 155);
+  --warning: oklch(0.62 0.13 80);
+  --warning-ink: oklch(0.44 0.09 75);
+  --warning-subtle: oklch(0.97 0.035 85);
+  --danger: oklch(0.55 0.19 25);
+  --danger-ink: oklch(0.47 0.18 25);
+  --danger-subtle: oklch(0.96 0.03 25);
+
+  --focus: oklch(0.52 0.19 262);
+
+  /* Elevation — at most two levels, hairline first */
+  --shadow-card: 0 1px 2px oklch(0.2 0.02 265 / 0.04);
+  --shadow-overlay: 0 16px 40px -16px oklch(0.2 0.02 265 / 0.24);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 240ms;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: oklch(0.16 0.01 265);
+  --canvas-subtle: oklch(0.19 0.012 265);
+  --surface: oklch(0.2 0.012 265);
+  --surface-raised: oklch(0.25 0.014 265);
+  --surface-sunken: oklch(0.18 0.01 265);
+
+  --line: oklch(0.3 0.012 265);
+  --line-strong: oklch(0.38 0.014 265);
+
+  --ink: oklch(0.96 0.005 265);
+  --ink-secondary: oklch(0.72 0.012 265);
+  --ink-tertiary: oklch(0.66 0.012 265);
+
+  --accent: oklch(0.74 0.14 262);
+  --accent-strong: oklch(0.8 0.13 262);
+  --accent-subtle: oklch(0.26 0.04 262);
+  --accent-line: oklch(0.36 0.06 262);
+  --on-accent: oklch(0.16 0.01 265);
+
+  --success: oklch(0.72 0.14 155);
+  --success-ink: oklch(0.8 0.13 155);
+  --success-subtle: oklch(0.25 0.04 155);
+  --warning: oklch(0.8 0.13 85);
+  --warning-ink: oklch(0.85 0.11 85);
+  --warning-subtle: oklch(0.27 0.04 85);
+  --danger: oklch(0.7 0.16 25);
+  --danger-ink: oklch(0.8 0.13 25);
+  --danger-subtle: oklch(0.27 0.05 25);
+
+  --focus: oklch(0.8 0.14 262);
+
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.24);
+  --shadow-overlay: 0 16px 40px -16px oklch(0 0 0 / 0.6);
+}
+
+/* The interview stage is always dark, whatever the workspace theme. */
+.studio {
+  color-scheme: dark;
+
+  --canvas: oklch(0.16 0.01 265);
+  --canvas-subtle: oklch(0.19 0.012 265);
+  --surface: oklch(0.2 0.012 265);
+  --surface-raised: oklch(0.25 0.014 265);
+  --surface-sunken: oklch(0.18 0.01 265);
+  --line: oklch(0.3 0.012 265);
+  --line-strong: oklch(0.38 0.014 265);
+  --ink: oklch(0.96 0.005 265);
+  --ink-secondary: oklch(0.72 0.012 265);
+  --ink-tertiary: oklch(0.66 0.012 265);
+  --accent: oklch(0.74 0.14 262);
+  --accent-strong: oklch(0.8 0.13 262);
+  --accent-subtle: oklch(0.26 0.04 262);
+  --accent-line: oklch(0.36 0.06 262);
+  --on-accent: oklch(0.16 0.01 265);
+  --success: oklch(0.72 0.14 155);
+  --success-ink: oklch(0.8 0.13 155);
+  --success-subtle: oklch(0.25 0.04 155);
+  --warning: oklch(0.8 0.13 85);
+  --warning-ink: oklch(0.85 0.11 85);
+  --warning-subtle: oklch(0.27 0.04 85);
+  --danger: oklch(0.7 0.16 25);
+  --danger-ink: oklch(0.8 0.13 25);
+  --danger-subtle: oklch(0.27 0.05 25);
+  --focus: oklch(0.8 0.14 262);
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.24);
+  --shadow-overlay: 0 16px 40px -16px oklch(0 0 0 / 0.6);
+}
+
+/* Expose tokens as Tailwind utilities: bg-canvas, text-ink, border-line… */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, "Times New Roman",
+    serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+
+  --color-canvas: var(--canvas);
+  --color-canvas-subtle: var(--canvas-subtle);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-line: var(--accent-line);
+  --color-on-accent: var(--on-accent);
+  --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
+  --color-danger-subtle: var(--danger-subtle);
+
+  --radius-card: 0.75rem;
+  --radius-panel: 1.25rem;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-overlay: var(--shadow-overlay);
+
+  --text-display: clamp(1.75rem, 1.35rem + 1.6vw, 2.5rem);
+  --text-display--line-height: 1.12;
+  --text-display--letter-spacing: -0.022em;
+  --text-title: clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);
+  --text-title--line-height: 1.22;
+  --text-title--letter-spacing: -0.016em;
+}
+
 @layer base {
-  :root {
-    --bg-workspace: #FFFFFF;
-    --bg-subtle: #F8F8F6;
-    --text-graphite: #202124;
-    --text-secondary: #5F6368;
-    --text-tertiary: #80868B;
-    --surface-card: #FFFFFF;
-    --surface-secondary: #F7F7F5;
-    --surface-tertiary: #F2F2F0;
-    --border-subtle: #E6E6E4;
-    --border-strong: #D4D4D0;
-    --accent-clay: #C4744B;
-    --accent-clay-hover: #B3643C;
-    --accent-clay-subtle: #FAF2ED;
-    --accent-clay-border: #EED9CC;
-    --studio-charcoal: #141517;
-    --studio-surface: #1C1D20;
-    --studio-surface-elevated: #242529;
-    --studio-border: #2C2D32;
-    --studio-text: #F3F3F5;
-    --studio-muted: #8E929E;
+  * {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    letter-spacing: -0.006em;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.016em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--accent-subtle);
+    color: var(--ink);
+  }
+
+  /* One visible focus treatment for every interactive element. */
+  :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Inputs must not zoom on iOS. */
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+    color: var(--ink);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-tertiary);
+    opacity: 1;
+  }
+
+  [hidden] {
+    display: none !important;
   }
 }
 
-body {
-  background-color: #FFFFFF;
-  color: var(--text-graphite);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  letter-spacing: -0.012em;
-  line-height: 1.45;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  max-width: 100vw;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-tap-highlight-color: transparent;
-  text-rendering: optimizeLegibility;
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+  .pb-nav {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+  .h-nav {
+    height: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+  .measure {
+    max-width: 68ch;
+  }
+  .measure-tight {
+    max-width: 52ch;
+  }
+  .font-question {
+    font-family: var(--font-serif);
+    font-size: clamp(1.375rem, 1.15rem + 0.9vw, 1.75rem);
+    line-height: 1.32;
+    letter-spacing: -0.012em;
+    font-weight: 450;
+    text-wrap: pretty;
+  }
+  .animate-fade-in {
+    animation: fade-in var(--dur-base) var(--ease-out) both;
+  }
+  .animate-rise {
+    animation: rise var(--dur-slow) var(--ease-out) both;
+  }
+  .animate-slide-down {
+    animation: slide-down var(--dur-base) var(--ease-out) both;
+  }
 }
 
-/* Touch and safe-area utilities */
-.pb-safe {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
-}
-.pt-safe {
-  padding-top: max(0.75rem, env(safe-area-inset-top));
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Minimalist Scrollbars */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Scrollbars — hairline, theme-aware */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(32, 35, 44, 0.16);
+  background: var(--line-strong);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(32, 35, 44, 0.28);
+  background: var(--ink-tertiary);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
-.studio-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-}
-.studio-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-/* Apple-Grade Minimalist Orb Keyframes (Organic Motion, No Cheap Neon Glow) */
+/* Orb motion — kept from the studio, slowed and made optional */
 @keyframes orb-breathe {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.94;
   }
@@ -101,7 +380,8 @@ body {
 }
 
 @keyframes orb-wave-reactive {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(0.985);
   }
   50% {
@@ -112,15 +392,27 @@ body {
 .orb-idle {
   animation: orb-breathe 4s ease-in-out infinite;
 }
-
 .orb-listening {
   animation: orb-wave-reactive 1.6s ease-in-out infinite;
 }
-
 .orb-thinking {
-  animation: orb-breathe 2.2s ease-in-out infinite, orb-slow-rotation 16s linear infinite;
+  animation: orb-breathe 2.2s ease-in-out infinite,
+    orb-slow-rotation 16s linear infinite;
 }
-
 .orb-speaking {
   animation: orb-wave-reactive 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

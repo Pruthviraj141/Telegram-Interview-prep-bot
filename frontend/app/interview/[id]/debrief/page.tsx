@@ -1,17 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Navbar } from "@/components/Navbar";
+import { AlertCircle } from "lucide-react";
+import { AppShell } from "@/components/shell/AppShell";
 import { DebriefView } from "@/components/DebriefView";
+import { Spinner } from "@/components/ui/spinner";
 import { api, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
-import { RefreshCw, AlertCircle } from "lucide-react";
-import { Suspense } from "react";
+
+function LoadingDebrief() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+      <Spinner size="md" />
+      <span className="text-xs font-medium text-ink-secondary">
+        Loading debrief…
+      </span>
+    </div>
+  );
+}
 
 function DebriefContent() {
   const params = useParams();
   const sessionId = params.id as string;
-
 
   const [user, setUser] = useState<CandidateUser | null>(null);
   const [session, setSession] = useState<InterviewSession | null>(null);
@@ -39,52 +49,39 @@ function DebriefContent() {
   }, [sessionId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
-        <span className="text-xs text-slate-500 font-medium">
-          Loading debrief...
-        </span>
-      </div>
-    );
+    return <LoadingDebrief />;
   }
 
   if (error || !session) {
     return (
-      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center p-4">
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-xs">
-          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-          <h2 className="text-base font-bold text-[#202124]">Debrief Unavailable</h2>
-          <p className="text-xs text-slate-600 leading-relaxed">{error || "Could not retrieve debrief records."}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-4 rounded-card border border-line bg-surface p-8 text-center shadow-card">
+          <AlertCircle
+            aria-hidden="true"
+            className="mx-auto h-8 w-8 text-danger-ink"
+          />
+          <h2 className="text-base font-semibold text-ink">
+            Debrief unavailable
+          </h2>
+          <p className="text-xs leading-relaxed text-ink-secondary">
+            {error || "Could not retrieve debrief records."}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#202124] flex flex-col">
-      <Navbar user={user} />
-      <main className="flex-1">
-        <DebriefView session={session} turns={turns} debrief={session.debrief} />
-      </main>
-    </div>
+    <AppShell user={user} width="default">
+      <DebriefView session={session} turns={turns} debrief={session.debrief} />
+    </AppShell>
   );
 }
 
 export default function DebriefPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
-          <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
-          <span className="text-xs text-slate-500 font-medium">
-            Loading debrief...
-          </span>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingDebrief />}>
       <DebriefContent />
     </Suspense>
   );
 }
-

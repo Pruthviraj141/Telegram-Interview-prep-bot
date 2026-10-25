@@ -3,200 +3,232 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CandidateUser } from "@/lib/api";
-import {
-  Mic,
-  LayoutDashboard,
-  Briefcase,
-  Building2,
-  Settings,
-  ShieldCheck,
-  KeyRound,
-  Menu,
-  X,
-  FileText,
-  ChevronRight
-} from "lucide-react";
+import type { CandidateUser } from "@/lib/api";
+import { ChevronRight, KeyRound, Menu, Mic, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import {
+  PRIMARY_NAV,
+  SECONDARY_NAV,
+  isActivePath,
+  type NavItem,
+} from "@/components/shell/nav-items";
 
 interface NavbarProps {
   user?: CandidateUser | null;
 }
 
+const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...SECONDARY_NAV];
+
 export const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const mainNavItems = [
-    { label: "Dashboard", href: "/", icon: LayoutDashboard },
-    { label: "Practice", href: "/interview", icon: Mic, highlight: true },
-    { label: "Tracker", href: "/tracker", icon: Briefcase },
-    { label: "Companies", href: "/company-prep", icon: Building2 },
-    { label: "Resume", href: "/resume", icon: FileText },
-  ];
-
-  const secondaryNavItems = [
-    { label: "Past Rounds", href: "/history", icon: ChevronRight },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ];
+  const initials = (user?.display_name || user?.email || "C")[0].toUpperCase();
 
   return (
     <>
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E6E6E4] transition-all">
-        <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#202124] text-white flex items-center justify-center shadow-xs transition-transform duration-150 group-hover:scale-105">
-              <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-            </div>
-            <span className="font-semibold text-xs sm:text-sm text-[#202124] tracking-tight">
+      <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:h-16 sm:px-6 lg:px-8">
+          <Link
+            href="/"
+            className="flex min-w-0 shrink-0 items-center gap-2.5"
+            aria-label="AI Interview Coach — dashboard"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-ink text-canvas">
+              <Mic aria-hidden="true" className="h-4 w-4" />
+            </span>
+            <span className="hidden text-sm font-semibold tracking-tight text-ink sm:inline">
               AI Interview Coach
             </span>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {[...mainNavItems, { label: "Settings", href: "/settings", icon: Settings }].map((item) => {
+          {/* Desktop / laptop navigation — tablets use the bottom bar. */}
+          <nav
+            aria-label="Main"
+            className="hidden flex-1 items-center gap-0.5 lg:flex"
+          >
+            {PRIMARY_NAV.map((item) => {
               const Icon = item.icon;
-              const active =
-                pathname === item.href ||
-                (item.href !== "/" && pathname.startsWith(item.href));
+              const active = isActivePath(pathname, item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-medium tracking-tight transition-all duration-150 flex items-center gap-1.5",
+                    "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
                     active
-                      ? "bg-[#F7F7F5] text-[#202124] font-semibold border border-[#E6E6E4]"
-                      : "text-[#5F6368] hover:text-[#202124] hover:bg-black/[0.03]",
-                    item.highlight && !active && "text-[#C4744B] font-medium"
+                      ? "bg-surface-sunken text-ink"
+                      : item.emphasis
+                        ? "text-accent-strong hover:bg-surface-sunken"
+                        : "text-ink-secondary hover:bg-surface-sunken hover:text-ink",
                   )}
                 >
-                  <Icon className={cn("w-3.5 h-3.5", active ? "text-[#202124]" : "text-[#80868B]")} />
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5" />
                   <span>{item.label}</span>
+                </Link>
+              );
+            })}
+
+            <span aria-hidden="true" className="mx-1 h-5 w-px bg-line" />
+
+            {SECONDARY_NAV.map((item) => {
+              const Icon = item.icon;
+              const active = isActivePath(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  aria-label={item.label}
+                  title={item.label}
+                  className={cn(
+                    "inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                    active
+                      ? "bg-surface-sunken text-ink"
+                      : "text-ink-secondary hover:bg-surface-sunken hover:text-ink",
+                  )}
+                >
+                  <Icon aria-hidden="true" className="h-4 w-4" />
                 </Link>
               );
             })}
           </nav>
 
-          {/* User Badges & Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 lg:ml-0">
             {user?.groq_key_configured ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-[#FAF2ED] border border-[#EED9CC] rounded-full text-[10px] sm:text-[11px] font-medium text-[#B3582A] shadow-xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C4744B]" />
-                <span className="hidden sm:inline">{user.groq_key_masked || "Groq Active"}</span>
-                <span className="sm:hidden">Groq</span>
-              </div>
+              <span className="hidden max-w-[9rem] items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-secondary sm:inline-flex">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
+                />
+                <span className="truncate">
+                  {user.groq_key_masked || "Groq active"}
+                </span>
+              </span>
             ) : (
               <Link
                 href="/settings"
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#FAF2ED] border border-[#EED9CC] rounded-full text-[10px] sm:text-[11px] font-medium text-[#B3582A] hover:bg-[#F5E7DF] transition shadow-xs"
+                className="hidden items-center gap-1.5 rounded-full border border-warning/40 bg-warning-subtle px-2.5 py-1 text-[11px] font-medium text-warning-ink sm:inline-flex"
               >
-                <KeyRound className="w-3 h-3 text-[#C4744B]" />
-                <span className="hidden sm:inline">Setup Key</span>
-                <span className="sm:hidden">Key</span>
+                <KeyRound aria-hidden="true" className="h-3 w-3" />
+                <span className="truncate">Add API key</span>
               </Link>
             )}
 
+            <ThemeToggle />
+
             <Link
               href="/settings"
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-xs font-semibold text-[#202124] shadow-xs hover:border-[#D4D4D0] transition"
-              title="Profile & Settings"
+              aria-label="Profile and settings"
+              title="Profile and settings"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-xs font-semibold text-ink transition-colors hover:border-line-strong"
             >
-              {(user?.display_name || user?.email || "C")[0].toUpperCase()}
+              {initials}
             </Link>
 
-            {/* Mobile Sheet Toggle for secondary links */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden w-8 h-8 flex items-center justify-center text-slate-700 hover:text-black hover:bg-black/[0.04] rounded-lg transition"
-              aria-label="Toggle Secondary Menu"
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-controls="nav-sheet"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-secondary transition-colors hover:bg-surface-sunken hover:text-ink lg:hidden"
             >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {menuOpen ? (
+                <X aria-hidden="true" className="h-4 w-4" />
+              ) : (
+                <Menu aria-hidden="true" className="h-4 w-4" />
+              )}
             </button>
           </div>
         </div>
 
-        {/* Mobile Dropdown Sheet for More Links */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-b border-[#E6E6E4] bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg animate-in slide-in-from-top-1 duration-150">
-            <div className="text-[11px] font-semibold text-[#80868B] uppercase tracking-wider px-2 py-1">
-              Navigation & Records
-            </div>
-            {[...mainNavItems, ...secondaryNavItems].map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition min-h-[44px]",
-                    active
-                      ? "bg-[#F7F7F5] text-[#202124] font-semibold border border-[#E6E6E4] shadow-xs"
-                      : "text-[#5F6368] hover:bg-black/[0.03] hover:text-[#202124]"
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className={cn("w-4 h-4", active ? "text-[#202124]" : "text-[#80868B]")} />
-                    <span>{item.label}</span>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-[#80868B]" />
-                </Link>
-              );
-            })}
+        {menuOpen ? (
+          <div
+            id="nav-sheet"
+            className="animate-slide-down border-t border-line bg-surface px-3 pb-3 pt-2 lg:hidden"
+          >
+            <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-tertiary">
+              All sections
+            </p>
+            <ul>
+              {ALL_NAV.map((item) => {
+                const Icon = item.icon;
+                const active = isActivePath(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-11 items-center justify-between rounded-lg px-3 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-surface-sunken text-ink"
+                          : "text-ink-secondary hover:bg-surface-sunken hover:text-ink",
+                      )}
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <Icon aria-hidden="true" className="h-4 w-4" />
+                        {item.label}
+                      </span>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 text-ink-tertiary"
+                      />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        )}
+        ) : null}
       </header>
 
-      {/* Mobile Bottom Navigation Bar (Fixed 5-Tab Bar, pb-safe for iPhone home bar) */}
       <nav
-        aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-[#E6E6E4] pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.03)]"
+        aria-label="Sections"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-canvas/95 pb-safe backdrop-blur-lg lg:hidden"
       >
-        <div className="flex items-center justify-around h-14 px-1 max-w-lg mx-auto">
-          {mainNavItems.map((item) => {
+        <ul className="mx-auto flex h-14 max-w-lg items-stretch">
+          {PRIMARY_NAV.map((item) => {
             const Icon = item.icon;
-            const active =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
+            const active = isActivePath(pathname, item.href);
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex-1 flex flex-col items-center justify-center h-full min-h-[44px] py-1 transition-colors relative",
-                  active ? "text-[#202124]" : "text-[#80868B] hover:text-[#202124]"
-                )}
-              >
-                {/* Active Indicator Top Pill */}
-                {active && (
-                  <span className="absolute top-0 w-8 h-0.5 bg-[#C4744B] rounded-full" />
-                )}
-                <div
+              <li key={item.href} className="min-w-0 flex-1">
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center justify-center w-7 h-7 rounded-xl transition-transform",
-                    item.highlight && active && "bg-[#202124] text-white",
-                    item.highlight && !active && "text-[#C4744B]"
+                    "relative flex h-full min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 transition-colors",
+                    active
+                      ? "text-ink"
+                      : item.emphasis
+                        ? "text-accent-strong"
+                        : "text-ink-secondary hover:text-ink",
                   )}
                 >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span
-                  className={cn(
-                    "text-[10px] tracking-tight leading-none mt-0.5",
-                    active ? "font-semibold text-[#202124]" : "font-medium text-[#5F6368]"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
+                  {active ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-x-0 top-0 mx-auto h-0.5 w-8 rounded-full bg-accent-strong"
+                    />
+                  ) : null}
+                  <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  <span
+                    className={cn(
+                      "w-full truncate text-center text-[10px] leading-none",
+                      active ? "font-semibold" : "font-medium",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </nav>
     </>
   );

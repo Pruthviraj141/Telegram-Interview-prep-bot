@@ -77,10 +77,14 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[11px] font-medium text-slate-700">
+        <label
+          htmlFor="tts-sample-prompt"
+          className="text-[11px] font-medium text-slate-700"
+        >
           Sample Prompt
         </label>
         <textarea
+          id="tts-sample-prompt"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type an interview prompt to test voice timbre..."
@@ -97,8 +101,14 @@ export const TTSComponent: React.FC<TTSComponentProps> = ({ className }) => {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-2">
-          <label className="text-[11px] font-semibold text-slate-600">Voice:</label>
+          <label
+            htmlFor="tts-voice"
+            className="text-[11px] font-semibold text-slate-600"
+          >
+            Voice:
+          </label>
           <select
+            id="tts-voice"
             value={voice}
             onChange={(e) => setVoice(e.target.value)}
             className="px-3 py-1.5 rounded-xl border border-[#E6E6E4] text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#202124]"

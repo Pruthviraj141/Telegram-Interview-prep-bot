@@ -1,21 +1,39 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Navbar } from "@/components/Navbar";
-import { api, CandidateUser, getApiBase } from "@/lib/api";
-import { Building2, Search, ArrowRight, Sparkles, AlertCircle, RefreshCw, CheckCircle2, ArrowLeft } from "lucide-react";
+import { AppShell } from "@/components/shell/AppShell";
+import { api, CandidateUser, CompanyPrepPack } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
+import { AlertCircle, ArrowRight, Building2, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonClasses } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function CompanyPrepPage() {
   const [user, setUser] = useState<CandidateUser | null>(null);
   const [company, setCompany] = useState<string>("");
   const [role, setRole] = useState<string>("");
-  const [prepData, setPrepData] = useState<any>(null);
+  const [prepData, setPrepData] = useState<CompanyPrepPack | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getMe().then(setUser).catch(() => {});
+    let cancelled = false;
+    api
+      .getMe()
+      .then((u) => {
+        if (!cancelled) setUser(u);
+      })
+      .catch(() => {
+        // The header still renders without a profile; the request itself
+        // reports its own failure below.
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -24,149 +42,138 @@ export default function CompanyPrepPage() {
     setLoading(true);
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append("company_name", company.trim());
-      if (role.trim()) formData.append("target_role", role.trim());
-
-      const res = await fetch(`${getApiBase()}/company-prep`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${user?.id || "demo"}`,
-          "X-Clerk-User-Id": user?.id || "demo"
-        },
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Failed to load company preparation pack.");
-      const data = await res.json();
+      const data = await api.companyPrep(company.trim(), role.trim() || undefined);
       setPrepData(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch company prep.");
+    } catch (err: unknown) {
+      setError(
+        getErrorMessage(err, "Could not load a prep pack for that company."),
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans">
-      <Navbar user={user} />
+    <AppShell user={user} width="default" contentClassName="space-y-6 sm:space-y-8">
+      <PageHeader
+        eyebrow="Company prep"
+        title="Company interview packs"
+        description="Curated practice questions for a company you are targeting. These are common placement topics, not actual company questions."
+      />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
-            Company Interview Packs
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Targeted practice questions for the companies visiting your college.
-          </p>
+      <Card className="p-4 sm:p-6">
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-col gap-4 sm:flex-row sm:items-end"
+        >
+          <Field label="Company" required className="flex-1">
+            <Input
+              type="text"
+              placeholder="e.g. Amazon, Google, Microsoft, TCS"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Role (optional)" className="flex-1">
+            <Input
+              type="text"
+              placeholder={user?.target_role || "Software Engineer"}
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            />
+          </Field>
+
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!company.trim()}
+            className="sm:mb-0"
+          >
+            {loading ? (
+              <span>Generating…</span>
+            ) : (
+              <>
+                <Search aria-hidden="true" className="h-4 w-4" />
+                <span>Generate questions</span>
+              </>
+            )}
+          </Button>
+        </form>
+      </Card>
+
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-subtle p-4 text-xs font-medium text-danger-ink"
+        >
+          <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </div>
+      )}
 
-        {/* Search Input Card */}
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 sm:gap-3.5">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Company
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Amazon, Google, Microsoft, TCS"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
-              />
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Role
-              </label>
-              <input
-                type="text"
-                placeholder={user?.target_role || "Software Engineer"}
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs text-[#202124] focus:outline-none focus:ring-1 focus:ring-[#202124]"
-              />
-            </div>
-
-            <div className="sm:self-end">
-              <button
-                type="submit"
-                disabled={loading || !company.trim()}
-                className="w-full sm:w-auto px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer min-h-[44px]"
+      {prepData && (
+        <div className="space-y-6">
+          <Card className="space-y-4 p-6 sm:p-8">
+            <div className="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-ink">
+                {prepData.company} · {prepData.target_role}
+              </h2>
+              <Link
+                href="/interview?style=mixed"
+                className={buttonClasses({ size: "sm", className: "self-start sm:self-auto" })}
               >
-                {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                <span>Generate Questions</span>
-              </button>
+                <span>Practice questions</span>
+                <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+              </Link>
             </div>
-          </form>
-        </div>
 
-        {error && (
-          <div className="p-4 bg-rose-50 border border-rose-200/80 rounded-2xl flex items-center gap-2.5 text-rose-800 text-xs shadow-xs">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span className="font-medium">{error}</span>
-          </div>
-        )}
+            <p className="text-sm leading-relaxed text-ink-secondary">
+              {prepData.research_summary}
+            </p>
 
-        {/* Results Pack */}
-        {prepData && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E6E6E4]">
-                <div>
-                  <h2 className="text-lg font-semibold text-[#202124]">
-                    {prepData.company} • {prepData.target_role}
-                  </h2>
-                </div>
-                <Link
-                  href={`/interview?style=mixed`}
-                  className="px-3.5 py-2 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition inline-flex items-center gap-1.5 shadow-xs self-start sm:self-auto"
-                >
-                  <span>Practice Questions</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                {prepData.research_summary}
+            {prepData.disclaimer && (
+              <p className="rounded-lg border border-line bg-surface-sunken p-3 text-[11px] leading-relaxed text-ink-tertiary">
+                {prepData.disclaimer}
               </p>
+            )}
+          </Card>
 
-              {prepData.disclaimer && (
-                <div className="p-3 bg-[#F7F7F5] border border-[#E6E6E4] rounded-xl text-[11px] text-slate-500 leading-relaxed">
-                  {prepData.disclaimer}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-semibold text-slate-500 px-1">
-                Interview Questions
-              </h3>
-              <div className="grid grid-cols-1 gap-3">
-                {prepData.practice_questions?.map((q: any) => (
-                  <div
-                    key={q.id}
-                    className="bg-white border border-[#E6E6E4] rounded-xl p-4 sm:p-5 shadow-xs space-y-2 hover:border-slate-300 transition"
-                  >
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-slate-600 uppercase tracking-tight">{q.category}</span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#F7F7F5] border border-[#E6E6E4] font-semibold text-slate-700">
-                        {q.difficulty}
-                      </span>
-                    </div>
-                    <div className="text-xs sm:text-sm font-semibold text-[#202124] leading-snug">
-                      {q.question}
-                    </div>
+          <div className="space-y-3">
+            <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-ink-tertiary">
+              Practice questions
+            </h3>
+            <ul className="space-y-3">
+              {prepData.practice_questions?.map((q) => (
+                <li
+                  key={q.id}
+                  className="space-y-2 rounded-card border border-line bg-surface p-4 shadow-card transition-colors hover:border-line-strong sm:p-5"
+                >
+                  <div className="flex items-center justify-between gap-3 text-[11px]">
+                    <span className="font-semibold uppercase tracking-tight text-ink-tertiary">
+                      {q.category}
+                    </span>
+                    <Badge variant="outline">{q.difficulty}</Badge>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <p className="text-sm font-medium leading-snug text-ink">
+                    {q.question}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      )}
+
+      {!prepData && !loading && !error && (
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-line p-5 text-xs text-ink-tertiary">
+          <Building2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <span>
+            Enter a company name to pull a curated practice pack. Nothing is
+            stored until you start a round.
+          </span>
+        </div>
+      )}
+    </AppShell>
   );
 }

@@ -1,52 +1,68 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
-import { api, CandidateUser } from "@/lib/api";
-import {
-  Settings as SettingsIcon,
-  Key,
-  ShieldAlert,
-  Send,
-  Trash2,
-  CheckCircle2,
-  RefreshCw,
-  Copy,
-  AlertCircle,
-  ShieldCheck
-} from "lucide-react";
-
+import React, { useEffect, useState } from "react";
+import { AppShell } from "@/components/shell/AppShell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { TTSComponent } from "@/components/TTSComponent";
+import { api, CandidateUser } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Copy,
+  Key,
+  Send,
+  ShieldAlert,
+  Trash2,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/field";
+import { PageHeader } from "@/components/ui/page-header";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<CandidateUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Groq key replace state
   const [newKey, setNewKey] = useState<string>("");
   const [keyUpdating, setKeyUpdating] = useState<boolean>(false);
   const [keySuccess, setKeySuccess] = useState<string | null>(null);
+  const [keyError, setKeyError] = useState<string | null>(null);
 
   // Telegram link code state
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [codeLoading, setCodeLoading] = useState<boolean>(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
 
   // History deletion state
+  const [confirmingDelete, setConfirmingDelete] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [deleteSuccess, setDeleteSuccess] = useState<boolean>(false);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const u = await api.getMe();
-      setUser(u);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
+    let cancelled = false;
+    async function load() {
+      try {
+        const u = await api.getMe();
+        if (!cancelled) setUser(u);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setLoadError(getErrorMessage(err, "Could not load your settings."));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleUpdateKey = async (e: React.FormEvent) => {
@@ -54,13 +70,22 @@ export default function SettingsPage() {
     if (!newKey.trim()) return;
     setKeyUpdating(true);
     setKeySuccess(null);
+    setKeyError(null);
     try {
       const res = await api.setupGroqKey(newKey.trim());
-      setKeySuccess(`Groq key successfully updated: ${res.key_masked}`);
+      setKeySuccess(`Groq key updated: ${res.key_masked}`);
       setNewKey("");
-      await loadData();
-    } catch (err: any) {
-      alert(err.message || "Failed to validate key.");
+      try {
+        const u = await api.getMe();
+        setUser(u);
+      } catch {
+        // The key change already succeeded; a stale masked value in the
+        // header is harmless and fixes itself on the next page load.
+      }
+    } catch (err: unknown) {
+      setKeyError(
+        getErrorMessage(err, "That key could not be validated. Nothing was changed."),
+      );
     } finally {
       setKeyUpdating(false);
     }
@@ -68,173 +93,313 @@ export default function SettingsPage() {
 
   const handleGenerateLinkCode = async () => {
     setCodeLoading(true);
+    setCodeError(null);
+    setCopied(false);
     try {
       const res = await api.getTelegramLinkCode();
       setLinkCode(res.code);
+    } catch (err: unknown) {
+      setCodeError(
+        getErrorMessage(err, "Could not generate a link code. Try again."),
+      );
     } finally {
       setCodeLoading(false);
     }
   };
 
-  const handleDeleteHistory = async () => {
-    if (!confirm("Are you sure you want to permanently delete all your interview sessions and debrief history? This action cannot be undone.")) {
-      return;
+  const handleCopy = async () => {
+    if (!linkCode) return;
+    try {
+      await navigator.clipboard.writeText(`/link ${linkCode}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be blocked by the browser; the code is visible
+      // on screen so the user can still copy it by hand.
+      setCopied(false);
     }
+  };
+
+  const handleDeleteHistory = async () => {
     setDeleting(true);
+    setDeleteError(null);
     try {
       await api.deleteAllHistory();
       setDeleteSuccess(true);
+      setConfirmingDelete(false);
       setTimeout(() => setDeleteSuccess(false), 4000);
+    } catch (err: unknown) {
+      setDeleteError(
+        getErrorMessage(err, "Could not delete your history. Nothing was removed."),
+      );
     } finally {
       setDeleting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans">
-      <Navbar user={user} />
+    <AppShell user={user} width="narrow" contentClassName="space-y-6 sm:space-y-8">
+      <PageHeader
+        eyebrow="Settings"
+        title="Account & privacy"
+        description="Manage your Groq API key, Telegram companion, voice preview, and stored interview data."
+      />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-12 space-y-6 sm:space-y-8 pb-24 md:pb-12">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
-            Settings
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Manage your Groq API key, Telegram companion, and data privacy.
-          </p>
+      {loading && (
+        <div className="flex justify-center py-16">
+          <Spinner size="lg" label="Loading settings…" />
         </div>
+      )}
 
-        {/* Groq Key Card */}
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E6E6E4]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
-                <Key className="w-4 h-4" />
+      {loadError && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-subtle p-4 text-xs font-medium text-danger-ink"
+        >
+          <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <span>{loadError}</span>
+        </div>
+      )}
+
+      {!loading && (
+        <>
+          <Card className="p-4 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Appearance</h2>
+                <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
+                  Follow your system setting, or pin the light workspace or dark
+                  studio.
+                </p>
               </div>
-              <h2 className="text-xs sm:text-sm font-semibold text-[#202124]">
-                Groq API Key
+              <ThemeToggle variant="segmented" hideLegend />
+            </div>
+          </Card>
+
+          <Card className="space-y-4 p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-line bg-surface-sunken text-ink">
+                  <Key aria-hidden="true" className="h-4 w-4" />
+                </span>
+                <h2 className="text-sm font-semibold text-ink">Groq API key</h2>
+              </div>
+              {user?.groq_key_configured && user.groq_key_masked ? (
+                <Badge variant="success">{user.groq_key_masked}</Badge>
+              ) : null}
+            </div>
+
+            <p className="text-xs leading-relaxed text-ink-secondary">
+              Your key powers transcription and answer evaluation. It is
+              encrypted at rest and never sent to the Telegram bot.
+            </p>
+
+            {keySuccess && (
+              <div
+                role="status"
+                className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-subtle p-3 text-xs font-medium text-success-ink"
+              >
+                <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span>{keySuccess}</span>
+              </div>
+            )}
+
+            {keyError && (
+              <div
+                role="alert"
+                className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-subtle p-3 text-xs font-medium text-danger-ink"
+              >
+                <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span>{keyError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateKey} className="space-y-3">
+              <Field
+                label="Replace Groq key"
+                hint="Paste a key from console.groq.com. Validation happens before it is saved."
+              >
+                <Input
+                  type="password"
+                  autoComplete="off"
+                  placeholder="gsk_…"
+                  className="font-mono"
+                  value={newKey}
+                  onChange={(e) => setNewKey(e.target.value)}
+                />
+              </Field>
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  loading={keyUpdating}
+                  disabled={!newKey.trim()}
+                >
+                  {keyUpdating ? "Saving key…" : "Update Groq key"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+
+          <Card className="space-y-4 p-4 sm:p-6">
+            <div className="flex items-center gap-2.5 border-b border-line pb-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-line bg-surface-sunken text-ink">
+                <Send aria-hidden="true" className="h-4 w-4" />
+              </span>
+              <h2 className="text-sm font-semibold text-ink">
+                Telegram companion
               </h2>
             </div>
-            {user?.groq_key_configured && (
-              <span className="text-[10px] sm:text-[11px] font-medium text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
-                {user.groq_key_masked}
-              </span>
-            )}
-          </div>
 
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Your API key powers real-time speech and evaluation models. Keys are encrypted at rest.
-          </p>
+            <p className="text-xs leading-relaxed text-ink-secondary">
+              Connect Telegram to practice flashcards and spaced-review
+              questions on mobile. Linking uses a single-use code that expires
+              in ten minutes.
+            </p>
 
-          {keySuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>{keySuccess}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleUpdateKey} className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Replace Groq Key
-              </label>
-              <input
-                type="password"
-                placeholder="gsk_..."
-                value={newKey}
-                onChange={(e) => setNewKey(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-[#E6E6E4] rounded-xl text-base sm:text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#202124]"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={keyUpdating || !newKey.trim()}
-              className="w-full sm:w-auto px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition disabled:opacity-50 cursor-pointer min-h-[44px]"
-            >
-              {keyUpdating ? "Saving Key..." : "Update Groq Key"}
-            </button>
-          </form>
-        </div>
-
-        {/* Telegram Linking Card */}
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-[#E6E6E4]">
-            <div className="w-8 h-8 rounded-xl bg-[#F7F7F5] border border-[#E6E6E4] flex items-center justify-center text-[#202124]">
-              <Send className="w-4 h-4" />
-            </div>
-            <h2 className="text-sm font-semibold text-[#202124]">
-              Telegram Bot Companion Link
-            </h2>
-          </div>
-
-          <p className="text-xs text-slate-600 leading-relaxed">
-            Connect your Telegram account to practice flashcards, receive spaced review questions, and stay consistent on mobile.
-            Linking uses a single-use code and never sends your Groq key over Telegram.
-          </p>
-
-          {user?.telegram_linked ? (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Your account is actively linked with the Telegram Bot!</span>
-            </div>
-          ) : (
-            <div>
-              {linkCode ? (
-                <div className="p-5 bg-[#F7F7F5] border border-[#E6E6E4] rounded-2xl space-y-2">
-                  <div className="text-[11px] text-slate-500 font-medium">Your 10-Minute One-Time Code:</div>
-                  <div className="text-3xl font-mono font-bold text-[#202124] tracking-widest">{linkCode}</div>
-                  <p className="text-xs text-slate-600">
-                    Open your Telegram bot and send: <code className="bg-white px-2 py-0.5 rounded-lg border border-[#E6E6E4] font-bold text-[#202124]">/link {linkCode}</code>
-                  </p>
+            {user?.telegram_linked ? (
+              <div
+                role="status"
+                className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-subtle p-3.5 text-xs font-medium text-success-ink"
+              >
+                <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span>Your account is linked to the Telegram bot.</span>
+              </div>
+            ) : linkCode ? (
+              <div className="space-y-3 rounded-xl border border-line bg-surface-sunken p-4">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                  One-time code · expires in 10 minutes
+                </p>
+                <p className="font-mono text-2xl font-semibold tracking-[0.2em] text-ink">
+                  {linkCode}
+                </p>
+                <p className="text-xs leading-relaxed text-ink-secondary">
+                  Open the bot and send{" "}
+                  <code className="rounded border border-line bg-surface px-1.5 py-0.5 font-mono text-[11px] text-ink">
+                    /link {linkCode}
+                  </code>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleCopy}>
+                    {copied ? (
+                      <>
+                        <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy aria-hidden="true" className="h-3.5 w-3.5" />
+                        <span>Copy command</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGenerateLinkCode}
+                    loading={codeLoading}
+                  >
+                    Generate new code
+                  </Button>
                 </div>
-              ) : (
-                <button
-                  onClick={handleGenerateLinkCode}
-                  disabled={codeLoading}
-                  className="px-5 py-2.5 bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-50 cursor-pointer min-h-[38px]"
-                >
-                  {codeLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                  <span>Generate Link Code</span>
-                </button>
-              )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {codeError && (
+                  <div
+                    role="alert"
+                    className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-subtle p-3 text-xs font-medium text-danger-ink"
+                  >
+                    <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+                    <span>{codeError}</span>
+                  </div>
+                )}
+                <Button onClick={handleGenerateLinkCode} loading={codeLoading}>
+                  <Send aria-hidden="true" className="h-3.5 w-3.5" />
+                  <span>{codeLoading ? "Generating…" : "Generate link code"}</span>
+                </Button>
+              </div>
+            )}
+          </Card>
+
+          <TTSComponent />
+
+          <Card className="space-y-4 border-danger/30 p-4 sm:p-6">
+            <div className="flex items-center gap-2.5 border-b border-line pb-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-danger/30 bg-danger-subtle text-danger-ink">
+                <ShieldAlert aria-hidden="true" className="h-4 w-4" />
+              </span>
+              <h2 className="text-sm font-semibold text-danger-ink">
+                Data privacy & deletion
+              </h2>
             </div>
-          )}
-        </div>
 
-        {/* Neural TTS Synthesis Engine Tester */}
-        <TTSComponent />
+            <p className="text-xs leading-relaxed text-ink-secondary">
+              Deleting removes every saved round: transcripts, answers, scores,
+              and debrief notes. Your profile and API key are kept. Deleted data
+              cannot be recovered.
+            </p>
 
-        {/* Data Privacy & Permanent Deletion */}
-        <div className="bg-white border border-rose-200/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-          <div className="flex items-center gap-2.5 pb-3 border-b border-rose-100">
-            <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/80 flex items-center justify-center text-rose-700">
-              <Trash2 className="w-4 h-4" />
-            </div>
-            <h2 className="text-sm font-semibold text-rose-800">
-              Data Privacy & Permanent Deletion
-            </h2>
-          </div>
+            {deleteSuccess && (
+              <div
+                role="status"
+                className="flex items-center gap-2 rounded-xl border border-success/30 bg-success-subtle p-3 text-xs font-medium text-success-ink"
+              >
+                <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span>All interview records have been permanently deleted.</span>
+              </div>
+            )}
 
-          <p className="text-xs text-slate-600 leading-relaxed">
-            In compliance with candidate agency and privacy by design, you can permanently delete all your
-            recorded turns, transcripts, answers, and debrief evaluations. Deleted data cannot be recovered.
-          </p>
+            {deleteError && (
+              <div
+                role="alert"
+                className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger-subtle p-3 text-xs font-medium text-danger-ink"
+              >
+                <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span>{deleteError}</span>
+              </div>
+            )}
 
-          {deleteSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs">
-              All interview records have been permanently purged.
-            </div>
-          )}
-
-          <button
-            onClick={handleDeleteHistory}
-            disabled={deleting}
-            className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-50 cursor-pointer min-h-[38px]"
-          >
-            {deleting ? "Purging Records..." : "Permanently Delete Interview Records"}
-          </button>
-        </div>
-      </main>
-    </div>
+            {confirmingDelete ? (
+              <div className="space-y-3 rounded-xl border border-danger/30 bg-danger-subtle p-4">
+                <p className="text-xs font-medium leading-relaxed text-danger-ink">
+                  Delete all interview records permanently? This cannot be
+                  undone.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    loading={deleting}
+                    onClick={handleDeleteHistory}
+                  >
+                    {deleting ? "Deleting…" : "Yes, delete everything"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={deleting}
+                    onClick={() => setConfirmingDelete(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                className="border-danger/40 text-danger-ink hover:bg-danger-subtle"
+                onClick={() => {
+                  setDeleteError(null);
+                  setConfirmingDelete(true);
+                }}
+              >
+                <Trash2 aria-hidden="true" className="h-4 w-4" />
+                <span>Delete interview records</span>
+              </Button>
+            )}
+          </Card>
+        </>
+      )}
+    </AppShell>
   );
 }

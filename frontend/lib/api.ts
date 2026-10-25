@@ -40,6 +40,21 @@ export interface CandidateProfile {
   recommended_topics: string[];
 }
 
+export interface CompanyPrepQuestion {
+  id: string;
+  question: string;
+  category: string;
+  difficulty: string;
+}
+
+export interface CompanyPrepPack {
+  company: string;
+  target_role: string;
+  research_summary: string;
+  practice_questions: CompanyPrepQuestion[];
+  disclaimer?: string;
+}
+
 export interface InterviewSession {
   id: string;
   clerk_id: string;
@@ -196,6 +211,15 @@ export const api = {
     });
   },
   getResume: () => fetchApi<any>("/resume"),
+  companyPrep: (companyName: string, targetRole?: string) => {
+    const formData = new FormData();
+    formData.append("company_name", companyName);
+    if (targetRole) formData.append("target_role", targetRole);
+    return fetchApi<CompanyPrepPack>("/company-prep", {
+      method: "POST",
+      body: formData,
+    });
+  },
   confirmProfile: (profile: CandidateProfile) =>
     fetchApi<{ status: string; confirmed_profile: CandidateProfile; next_step: string }>("/resume/confirm", {
       method: "PUT",

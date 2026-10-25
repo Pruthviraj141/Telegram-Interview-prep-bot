@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Navbar } from "@/components/Navbar";
+import { AppShell } from "@/components/shell/AppShell";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { InterviewStudio } from "@/components/InterviewStudio";
 import { api, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
 import { speechSynth } from "@/lib/speech";
@@ -13,7 +18,6 @@ import {
   ShieldCheck,
   ArrowRight,
   CheckCircle2,
-  RefreshCw,
   AlertCircle
 } from "lucide-react";
 import { Suspense } from "react";
@@ -164,10 +168,10 @@ function InterviewContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
-        <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
-        <span className="text-xs font-semibold text-slate-500 tracking-tight">
-          Loading Interview Studio...
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <Spinner size="md" />
+        <span className="text-xs font-semibold tracking-tight text-ink-secondary">
+          Loading Interview Studio…
         </span>
       </div>
     );
@@ -179,26 +183,18 @@ function InterviewContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#202124] flex flex-col font-sans selection:bg-[#FAF2ED] selection:text-[#B3582A]">
-      <Navbar user={user} />
-
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3.5 sm:px-6 py-6 sm:py-10 pb-24 md:pb-12">
-        {/* Header Title */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            {drillParam && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FAF2ED] border border-[#EED9CC] text-[#B3582A] text-[11px] font-bold uppercase tracking-wider">
-                Focused Skill Drill
-              </span>
-            )}
-            {phaseParam && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#202124] text-white text-[11px] font-bold uppercase tracking-wider">
-                {phaseParam.replace("_", " ").toUpperCase()}
-              </span>
-            )}
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#202124]">
-            {drillParam
+    <AppShell user={user} width="default">
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow={
+            drillParam
+              ? "Focused skill drill"
+              : phaseParam
+              ? phaseParam.replace("_", " ")
+              : "Practice round"
+          }
+          title={
+            drillParam
               ? `Focused Drill: ${drillParam.replace("_", " ").toUpperCase()}`
               : phaseParam === "phase_1"
               ? "Phase 1: Core Technical Foundations"
@@ -208,10 +204,10 @@ function InterviewContent() {
               ? "Phase 3: Project Architecture & Defence"
               : phaseParam === "phase_4"
               ? "Phase 4: Realistic Full Mock Panel"
-              : "Start a Practice Round"}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-            {drillParam
+              : "Start a Practice Round"
+          }
+          description={
+            drillParam
               ? "A short, focused 2-question session targeting this specific skill area with instant calibrated feedback."
               : phaseParam === "phase_1"
               ? "Assess essential programming knowledge, language internals, and baseline role-specific concepts."
@@ -221,35 +217,51 @@ function InterviewContent() {
               ? "Deep dive into your resume projects, design decisions, failure handling, and trade-offs."
               : phaseParam === "phase_4"
               ? "Full timed simulation combining technical, architectural, and behavioral questions with a comprehensive debrief."
-              : "Pick a topic, choose whether you want instant coaching, and practice speaking your answers out loud."}
-          </p>
-        </div>
+              : "Pick a topic, choose whether you want instant coaching, and practice speaking your answers out loud."
+          }
+          actions={
+            drillParam ? (
+              <Badge variant="warning">Focused drill</Badge>
+            ) : phaseParam ? (
+              <Badge variant="outline">
+                {phaseParam.replace("_", " ").toUpperCase()}
+              </Badge>
+            ) : undefined
+          }
+        />
 
         {error && (
-          <div className="mb-5 p-3.5 sm:p-4 bg-rose-50 border border-rose-200/80 rounded-2xl flex items-center gap-3 text-rose-800 text-xs shadow-xs">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-card border border-danger/30 bg-danger-subtle p-4 text-sm text-danger-ink"
+          >
+            <AlertCircle
+              aria-hidden="true"
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
             <span className="font-medium">{error}</span>
           </div>
         )}
 
-        {/* Configuration Card */}
-        <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xs space-y-6 sm:space-y-7">
+        <Card className="space-y-7 p-5 sm:p-8">
           {/* Candidate Profile Context Banner */}
           {user && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-[#F7F7F5] border border-[#E6E6E4] text-xs">
+            <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface-sunken p-3.5 text-xs sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#FAF2ED] border border-[#EED9CC] flex items-center justify-center font-bold text-[#B3582A] text-xs shadow-xs">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent-line bg-accent-subtle text-xs font-bold text-accent-strong">
                   {(user.display_name || user.email || "C")[0].toUpperCase()}
                 </div>
-                <div className="text-slate-600">
-                  <span className="font-semibold text-[#202124]">{user.target_role || "Software Engineer"}</span>
-                  <span className="text-slate-400 mx-1.5">•</span>
+                <div className="text-ink-secondary">
+                  <span className="font-semibold text-ink">
+                    {user.target_role || "Software Engineer"}
+                  </span>
+                  <span className="mx-1.5 text-ink-tertiary">•</span>
                   <span>{user.target_company || "General Tech"}</span>
                 </div>
               </div>
               <Link
                 href="/resume"
-                className="text-[11px] font-semibold text-[#B3582A] hover:text-[#C4744B] transition self-start sm:self-auto"
+                className="self-start text-[11px] font-semibold text-accent-strong transition-colors hover:underline sm:self-auto"
               >
                 Edit profile
               </Link>
@@ -257,12 +269,12 @@ function InterviewContent() {
           )}
 
           {/* Section 1: Focus Track */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-700">
-              Focus Track
-            </label>
+          <fieldset className="space-y-3">
+            <legend className="block text-xs font-semibold text-ink">
+              Focus track
+            </legend>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {
                   id: "aiml",
@@ -338,39 +350,42 @@ function InterviewContent() {
                         ? "Confirm your resume profile with at least one project first."
                         : undefined
                     }
-                    className={`relative p-3.5 rounded-2xl border text-left transition-all duration-150 flex flex-col justify-between group ${
+                    className={`group relative flex flex-col justify-between rounded-xl border p-3.5 text-left transition-colors duration-[var(--dur-fast)] ${
                       isLocked
-                        ? "border-[#E6E6E4] bg-[#F7F7F5] opacity-60 cursor-not-allowed"
+                        ? "cursor-not-allowed border-line bg-surface-sunken opacity-60"
                         : "cursor-pointer"
                     } ${
                       isSelected && !isLocked
-                        ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
+                        ? "border-accent-line bg-accent-subtle shadow-xs ring-1 ring-accent/30"
                         : !isLocked
-                        ? "border-[#E6E6E4] hover:border-slate-300 bg-white"
+                        ? "border-line bg-surface-sunken hover:border-line-strong"
                         : ""
                     }`}
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-tertiary">
                           {style.badge}
                         </span>
                         {isLocked ? (
-                          <span className="text-[10px] font-semibold text-slate-400">
+                          <span className="text-[10px] font-semibold text-ink-tertiary">
                             Locked
                           </span>
                         ) : (
                           isSelected && (
-                            <div className="w-4 h-4 rounded-full bg-[#202124] text-white flex items-center justify-center">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-accent-strong text-on-accent">
+                              <CheckCircle2
+                                aria-hidden="true"
+                                className="h-3.5 w-3.5"
+                              />
                             </div>
                           )
                         )}
                       </div>
-                      <div className="font-semibold text-xs text-[#202124] tracking-tight">
+                      <div className="text-xs font-semibold tracking-tight text-ink">
                         {style.title}
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      <p className="mt-1 text-[11px] leading-relaxed text-ink-secondary">
                         {style.desc}
                       </p>
                     </div>
@@ -380,43 +395,47 @@ function InterviewContent() {
             </div>
 
             {!hasConfirmedProfile && (
-              <p className="text-[11px] text-slate-500 leading-relaxed">
+              <p className="text-[11px] leading-relaxed text-ink-secondary">
                 Resume Deep-Dive unlocks once you confirm a profile with at least one project.{" "}
                 <Link
                   href="/resume"
-                  className="font-semibold text-[#B3582A] hover:text-[#C4744B] underline underline-offset-2"
+                  className="font-semibold text-accent-strong underline underline-offset-2"
                 >
                   Confirm your resume profile
                 </Link>
                 .
               </p>
             )}
-          </div>
+          </fieldset>
 
           {/* Section 2: Feedback Mode */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-700">
-              Feedback Style
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <fieldset className="space-y-3">
+            <legend className="block text-xs font-semibold text-ink">
+              Feedback style
+            </legend>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setMode("practice")}
-                className={`p-4 rounded-2xl border text-left transition-all duration-150 relative cursor-pointer ${
+                aria-pressed={mode === "practice"}
+                className={`relative cursor-pointer rounded-xl border p-4 text-left transition-colors duration-[var(--dur-fast)] ${
                   mode === "practice"
-                    ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
-                    : "border-[#E6E6E4] hover:border-slate-300 bg-white"
+                    ? "border-accent-line bg-accent-subtle shadow-xs ring-1 ring-accent/30"
+                    : "border-line bg-surface-sunken hover:border-line-strong"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="font-semibold text-xs text-[#202124]">
+                <div className="mb-1 flex items-center justify-between">
+                  <div className="text-xs font-semibold text-ink">
                     Interactive Coaching
                   </div>
                   {mode === "practice" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#202124]" />
+                    <CheckCircle2
+                      aria-hidden="true"
+                      className="h-4 w-4 text-accent-strong"
+                    />
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+                <p className="text-[11px] leading-relaxed text-ink-secondary">
                   Immediate score and missing points feedback after each answer.
                 </p>
               </button>
@@ -424,33 +443,37 @@ function InterviewContent() {
               <button
                 type="button"
                 onClick={() => setMode("realistic")}
-                className={`p-4 rounded-2xl border text-left transition-all duration-150 relative cursor-pointer ${
+                aria-pressed={mode === "realistic"}
+                className={`relative cursor-pointer rounded-xl border p-4 text-left transition-colors duration-[var(--dur-fast)] ${
                   mode === "realistic"
-                    ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
-                    : "border-[#E6E6E4] hover:border-slate-300 bg-white"
+                    ? "border-accent-line bg-accent-subtle shadow-xs ring-1 ring-accent/30"
+                    : "border-line bg-surface-sunken hover:border-line-strong"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <div className="font-semibold text-xs text-[#202124]">
+                <div className="mb-1 flex items-center justify-between">
+                  <div className="text-xs font-semibold text-ink">
                     Realistic Simulation
                   </div>
                   {mode === "realistic" && (
-                    <CheckCircle2 className="w-4 h-4 text-[#202124]" />
+                    <CheckCircle2
+                      aria-hidden="true"
+                      className="h-4 w-4 text-accent-strong"
+                    />
                   )}
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+                <p className="text-[11px] leading-relaxed text-ink-secondary">
                   Continuous interview flow with a comprehensive final debrief.
                 </p>
               </button>
             </div>
-          </div>
+          </fieldset>
 
           {/* Section 3: Duration / Question Count */}
-          <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-700">
-              Round Length
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          <fieldset className="space-y-3">
+            <legend className="block text-xs font-semibold text-ink">
+              Round length
+            </legend>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
               {[
                 { id: "quick", label: "Quick Drill", count: "3 Questions", time: "~8 min" },
                 { id: "standard", label: "Standard Round", count: "5 Questions", time: "~18 min" },
@@ -462,91 +485,108 @@ function InterviewContent() {
                     key={d.id}
                     type="button"
                     onClick={() => setDurationMode(d.id)}
-                    className={`p-3 rounded-2xl border text-center transition-all duration-150 min-h-[48px] cursor-pointer ${
+                    aria-pressed={isSelected}
+                    className={`min-h-[48px] cursor-pointer rounded-xl border p-3 text-center transition-colors duration-[var(--dur-fast)] ${
                       isSelected
-                        ? "border-[#202124] bg-[#FAF2ED]/60 shadow-xs ring-1 ring-[#C4744B]/30"
-                        : "border-[#E6E6E4] hover:border-slate-300 text-slate-700 bg-white"
+                        ? "border-accent-line bg-accent-subtle shadow-xs ring-1 ring-accent/30"
+                        : "border-line bg-surface-sunken hover:border-line-strong"
                     }`}
                   >
-                    <div className="text-xs font-semibold text-[#202124]">{d.label}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">{d.count} • {d.time}</div>
+                    <div className="text-xs font-semibold text-ink">{d.label}</div>
+                    <div className="mt-0.5 text-[11px] text-ink-secondary">
+                      {d.count} • {d.time}
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </fieldset>
 
-          {/* Launch Action - High Priority Confident Graphite */}
-          <button
+          <Button
+            size="lg"
             onClick={handleStartSession}
-            disabled={starting}
-            className="w-full py-3.5 sm:py-4 rounded-xl bg-[#202124] hover:bg-[#111113] text-white font-semibold text-xs sm:text-sm transition shadow-sm flex items-center justify-center gap-2.5 disabled:opacity-50 cursor-pointer min-h-[48px]"
+            loading={starting}
+            className="w-full gap-2.5"
           >
             {starting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>Preparing Interview...</span>
-              </>
+              <span>Preparing interview…</span>
             ) : (
               <>
-                <Mic className="w-4 h-4 text-white" />
-                <span>Start Interview</span>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
+                <Mic aria-hidden="true" className="h-4 w-4" />
+                <span>Start interview</span>
+                <ArrowRight aria-hidden="true" className="h-4 w-4 opacity-70" />
               </>
             )}
-          </button>
-        </div>
-      </main>
+          </Button>
+        </Card>
 
-      {/* Audio Privacy & Consent Modal */}
-      {consentModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E6E6E4] rounded-2xl sm:rounded-3xl p-5 sm:p-8 max-w-md w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-            <div className="w-10 h-10 bg-[#FAF2ED] border border-[#EED9CC] rounded-2xl flex items-center justify-center text-[#B3582A]">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[#202124]">
-                A quick note on your microphone
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed mt-1">
-                We only listen while you speak to turn your voice into text for answer evaluation. We never save your raw audio files or share them with anyone.
-              </p>
-            </div>
+        {/* Audio Privacy & Consent Modal */}
+        {consentModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="consent-title"
+              className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-card border border-line bg-surface p-5 shadow-overlay sm:p-8"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent-line bg-accent-subtle text-accent-strong">
+                <ShieldCheck aria-hidden="true" className="h-5 w-5" />
+              </div>
+              <div>
+                <h3
+                  id="consent-title"
+                  className="font-serif text-lg font-medium text-ink"
+                >
+                  A quick note on your microphone
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
+                  We only listen while you speak to turn your voice into text for
+                  answer evaluation. We never save your raw audio files or share
+                  them with anyone.
+                </p>
+              </div>
 
-            <div className="p-3 bg-[#F7F7F5] border border-[#E6E6E4] rounded-2xl text-[11px] text-slate-600 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
-                <span>Audio is converted to text and immediately discarded</span>
+              <div className="space-y-1.5 rounded-xl border border-line bg-surface-sunken p-3 text-[11px] text-ink-secondary">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-accent-strong"
+                  />
+                  <span>Audio is converted to text and immediately discarded</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-accent-strong"
+                  />
+                  <span>Microphone turns off the second you stop speaking</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-accent-strong"
+                  />
+                  <span>You can delete your transcripts anytime in Settings</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
-                <span>Microphone turns off the second you stop speaking</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#B3582A] shrink-0" />
-                <span>You can delete your transcripts anytime in Settings</span>
-              </div>
-            </div>
 
-            <div className="flex gap-2.5 pt-1">
-              <button
-                onClick={() => setConsentModalOpen(false)}
-                className="flex-1 py-3 rounded-xl border border-[#E6E6E4] text-[#5F6368] text-xs font-semibold hover:bg-[#F7F7F5] transition min-h-[44px]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGrantConsent}
-                className="flex-1 py-3 rounded-xl bg-[#202124] hover:bg-[#111113] text-white text-xs font-semibold transition shadow-sm min-h-[44px]"
-              >
-                Got it, start practice
-              </button>
+              <div className="flex gap-2.5 pt-1">
+                <Button
+                  variant="secondary"
+                  onClick={() => setConsentModalOpen(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleGrantConsent} className="flex-1">
+                  Got it, start practice
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AppShell>
   );
 }
 
@@ -554,10 +594,10 @@ export default function InterviewLauncherPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-white text-[#202124] flex flex-col items-center justify-center space-y-3">
-          <RefreshCw className="w-5 h-5 text-[#202124] animate-spin" />
-          <span className="text-xs font-semibold text-slate-500 tracking-tight">
-            Loading Studio Launcher...
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+          <Spinner size="md" />
+          <span className="text-xs font-semibold tracking-tight text-ink-secondary">
+            Loading Studio Launcher…
           </span>
         </div>
       }
