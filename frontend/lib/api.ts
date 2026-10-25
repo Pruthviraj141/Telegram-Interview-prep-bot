@@ -80,6 +80,28 @@ export interface InterviewSession {
   created_at: string;
 }
 
+/** `GET /dashboard` — the placement command centre payload. */
+export interface DashboardData {
+  target_role: string;
+  target_company: string;
+  seniority: string;
+  next_recommended_action: {
+    action: string;
+    mode: string;
+    style: string;
+    duration: string;
+  };
+  overall_readiness: {
+    score: number | null;
+    label: string;
+    sessions_evaluated: number;
+  };
+  recent_sessions: InterviewSession[];
+  active_tracker_count: number;
+  roadmap: unknown;
+  resume_summary: unknown;
+}
+
 export interface InterviewSource {
   id: string;
   title: string;
@@ -240,7 +262,7 @@ export const api = {
     }),
 
   // Dashboard
-  getDashboard: () => fetchApi<any>("/dashboard"),
+  getDashboard: () => fetchApi<DashboardData>("/dashboard"),
 
   // Interview Studio
   startInterviewSession: (data: {

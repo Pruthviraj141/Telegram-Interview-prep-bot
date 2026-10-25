@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { DashboardView } from "@/components/DashboardView";
-import { api, CandidateUser } from "@/lib/api";
+import { api, CandidateUser, DashboardData, InterviewSession } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function HomePage() {
   const [user, setUser] = useState<CandidateUser | null>(null);
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,11 +22,15 @@ export default function HomePage() {
       const u = await api.getMe();
       setUser(u);
       if (u.onboarding_state === "COMPLETED") {
-        const dash = await api.getDashboard();
+        const [dash, allSessions] = await Promise.all([
+          api.getDashboard(),
+          api.listInterviewSessions().catch(() => null),
+        ]);
         setDashboardData(dash);
+        setSessions(allSessions ?? dash.recent_sessions);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to connect to backend service.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Couldn't reach the backend service."));
     } finally {
       setLoading(false);
     }
@@ -71,7 +77,11 @@ export default function HomePage() {
       {user.onboarding_state !== "COMPLETED" ? (
         <OnboardingWizard initialUser={user} onComplete={loadData} />
       ) : (
-        <DashboardView user={user} dashboardData={dashboardData} />
+        <DashboardView
+          user={user}
+          dashboardData={dashboardData}
+          sessions={sessions}
+        />
       )}
     </AppShell>
   );
