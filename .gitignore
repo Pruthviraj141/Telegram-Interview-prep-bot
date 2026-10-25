@@ -48,3 +48,6 @@ next-env.d.ts
 # Resumes and binary uploads
 *.pdf
 *.docx
+
+# UI/UX sweep artifacts (reports, screenshots)
+.uiux/
