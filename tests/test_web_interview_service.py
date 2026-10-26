@@ -73,6 +73,81 @@ def test_get_next_question_and_adaptive_follow_up(tmp_path):
     assert q2["is_follow_up"] is True
     assert "Isolation levels in transactions" in q2["question"]
 
+def _run_round(style: str, turns: int = 10, role: str = "Backend Engineer"):
+    """Ask `turns` questions the way the route does: no evaluations, so no follow-ups."""
+    qb = QuestionBank("data/question_bank.json")
+    qb.load_and_validate()
+    bp = build_interview_blueprint(
+        role=role,
+        seniority="Fresher",
+        duration_mode="standard",
+        interviewer_style=style,
+    )
+    asked: list = []
+    previous: list = []
+    for turn in range(turns):
+        q = get_next_question_for_turn(
+            qb, bp, turn, previous, asked_history=asked,
+        )
+        previous.append({
+            "turn_index": turn,
+            "question_id": q["question_id"],
+            "question_text": q["question"],
+            "category": q["category"],
+            "category_key": q["category_key"],
+            "is_follow_up": q.get("is_follow_up", False),
+            "evaluation": {},
+        })
+        asked.append(q["question_id"])
+    return bp, previous
+
+
+def test_hr_round_only_asks_behavioral_questions():
+    """A behavioral round must never drift into role-specific AI/technical questions."""
+    bp, turns = _run_round("hr", turns=10)
+    assert all(str(k).startswith("behavioral_") for k in bp["category_keys"])
+
+    for turn in turns:
+        key = turn["category_key"]
+        assert key in {
+            "behavioral_intro",
+            "behavioral_failure",
+            "behavioral_collaboration",
+            "behavioral_prioritization",
+        }, f"HR round leaked a non-behavioral question: {turn['question_text'][:80]}"
+
+    # The round should still use more than one behavioral theme.
+    assert len({t["category_key"] for t in turns}) >= 3
+
+
+def test_technical_round_never_asks_ai_questions():
+    bp, turns = _run_round("technical", turns=10)
+    technical_keys = {
+        "dsa_general",
+        "sql",
+        "oop",
+        "networking",
+        "operating_systems",
+    }
+    assert set(bp["category_keys"]) <= technical_keys
+    ai_keys = {
+        "ml_foundations", "ml_metrics", "rag", "agentic_ai",
+        "langgraph", "llm_eval_latency",
+    }
+    for turn in turns:
+        key = turn["category_key"] or ""
+        assert key not in ai_keys, f"Technical round leaked AI question: {turn['question_text'][:80]}"
+        assert key in technical_keys, f"Technical round leaked '{key}'"
+
+
+def test_mixed_round_spans_multiple_topics():
+    bp, turns = _run_round("mixed", turns=10)
+    keys = {t["category_key"] for t in turns}
+    assert len(keys) >= 3, f"Mixed round collapsed onto {keys}"
+    ai_keys = {"ml_foundations", "ml_metrics", "rag", "agentic_ai", "langgraph"}
+    assert not (keys & ai_keys)
+
+
 def test_generate_interview_debrief():
     session = {
         "id": "sess_1",

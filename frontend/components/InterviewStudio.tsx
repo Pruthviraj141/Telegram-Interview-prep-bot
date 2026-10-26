@@ -27,7 +27,7 @@ import {
   BookOpen,
   ExternalLink,
 } from "lucide-react";
-import { cn, getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage, topicLabel } from "@/lib/utils";
 import { useKeyboardInset } from "@/lib/use-keyboard-inset";
 import { useDraft } from "@/lib/use-draft";
 
@@ -791,9 +791,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({
 
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full bg-surface-raised border border-line text-ink-secondary text-[10px] font-semibold uppercase tracking-wider">
-              {currentTurn.category}
+              {topicLabel(currentTurn.category)}
             </span>
-            {currentTurn.is_follow_up && (
+            {Boolean(currentTurn.is_follow_up) && (
               <span className="px-2.5 py-0.5 rounded-full bg-accent-subtle border border-accent-line text-accent-strong text-[10px] font-semibold uppercase tracking-wider">
                 Follow-Up Probe
               </span>

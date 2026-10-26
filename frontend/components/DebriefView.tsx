@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { api, InterviewSession, InterviewTurn } from "@/lib/api";
-import { getErrorMessage } from "@/lib/utils";
+import { getErrorMessage, topicLabel } from "@/lib/utils";
 import {
   Award,
   Sparkles,
@@ -454,7 +454,7 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
                       <span className="text-[11px] font-semibold text-ink-tertiary">
                         Question {turn.turn_index + 1}
                       </span>
-                      <Badge variant="outline">{turn.category}</Badge>
+                      <Badge variant="outline">{topicLabel(turn.category)}</Badge>
                       {turn.is_follow_up && (
                         <Badge variant="accent">Follow-up probe</Badge>
                       )}

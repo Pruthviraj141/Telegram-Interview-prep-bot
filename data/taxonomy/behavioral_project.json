@@ -141,5 +141,567 @@
       "What was the most difficult bug you encountered during development of this project, and how did you isolate it?"
     ],
     "version": "2026.1"
+  },
+  {
+    "id": "beh_intro_001",
+    "short_title": "Background, Depth & Engineering Identity",
+    "question": "Walk me through your engineering background in about two minutes. I am less interested in a list of technologies than in what you have actually built, which part of it you owned end to end, and what kind of engineer you are trying to become.",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_intro",
+    "primary_skill": "Professional Identity & Self-Awareness",
+    "secondary_skills": [
+      "STAR Method",
+      "Technical Narrative",
+      "Ownership"
+    ],
+    "concepts": [
+      "background",
+      "ownership",
+      "self assessment",
+      "engineering identity",
+      "professional identity",
+      "self-awareness"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 3,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/student-interviewing"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate gives a short, ordered narrative rather than a resume recital: what they studied or built first, one or two projects they can defend in depth, the specific part they personally owned, and a forward-looking statement about the kind of engineering work they want. Strong answers show self-awareness about what they have not yet done.",
+    "rubric_1_to_5": {
+      "score_1": "Recites a technology list or resume bullets with no ownership or narrative.",
+      "score_3": "Covers background and one project, but cannot separate their own contribution from the team's.",
+      "score_5": "Tells a crisp, chronological story anchored in owned work, names a concrete growth area honestly, and connects it to the role."
+    },
+    "follow_up_directions": [
+      "Which part of that project would you rebuild today, and why?",
+      "What is one thing you learned in the last six months that changed how you write code?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_intro_002",
+    "short_title": "Most Representative Project & Working Style",
+    "question": "Pick the project that best represents how you actually work. What was your specific role, what decision in that project did you personally drive, and what does that say about how you approach engineering?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_intro",
+    "primary_skill": "Professional Identity & Self-Awareness",
+    "secondary_skills": [
+      "Project Ownership",
+      "Decision Making",
+      "STAR Method"
+    ],
+    "concepts": [
+      "project ownership",
+      "decision making",
+      "working style",
+      "professional identity",
+      "self-awareness"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate selects a project they can defend, states their exact role and scope, describes one decision they personally drove (not the team's), and explains the reasoning behind it. Strong answers link the decision to a repeatable working style rather than claiming every good outcome.",
+    "rubric_1_to_5": {
+      "score_1": "Claims collective credit, cannot name a decision they personally made.",
+      "score_3": "Describes the project and their role, but the decision and its reasoning stay vague.",
+      "score_5": "Names one concrete decision they owned, explains the alternative they rejected, and generalizes it into a clear working principle."
+    },
+    "follow_up_directions": [
+      "What would have gone differently on that project if you had not been on the team?",
+      "Who disagreed with that decision, and how did you handle it?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_intro_003",
+    "short_title": "Growth Target & Honest Skill Gap",
+    "question": "What kind of engineering work do you want to be doing two years from now, and what is the biggest gap between your current ability and that goal? Be specific about how you plan to close it.",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_intro",
+    "primary_skill": "Professional Identity & Self-Awareness",
+    "secondary_skills": [
+      "Growth Mindset",
+      "Self-Assessment",
+      "Learning Plan"
+    ],
+    "concepts": [
+      "growth",
+      "self assessment",
+      "learning plan",
+      "career goals",
+      "professional identity",
+      "self-awareness"
+    ],
+    "difficulty": "Easy-Medium",
+    "estimated_duration_minutes": 3,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/student-interviewing"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate states a specific direction, identifies a real and non-trivial gap (e.g. system design under load, distributed debugging, statistical evaluation), and names a concrete mechanism for closing it. Vague ambition without a gap, or a fake weakness, both score low.",
+    "rubric_1_to_5": {
+      "score_1": "Generic ambition with no gap, or a humble-brag weakness that is not real.",
+      "score_3": "Names a direction and a gap, but the plan to close it is generic ('more practice').",
+      "score_5": "Names a credible direction, diagnoses a specific gap with evidence, and describes a concrete plan with a way to measure progress."
+    },
+    "follow_up_directions": [
+      "What evidence would tell you that you had closed that gap?",
+      "What is a skill you deliberately decided not to invest in, and why?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_fail_002",
+    "short_title": "Bug Shipped to Users & Post-Incident Change",
+    "question": "Tell me about a bug you shipped that reached real users or a real evaluation. What was the user-visible impact, how did you find and isolate the cause, and what specifically changed in your process afterwards?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_failure",
+    "primary_skill": "Ownership & Accountability",
+    "secondary_skills": [
+      "Failure Recovery",
+      "Debugging Under Pressure",
+      "Reflective Learning"
+    ],
+    "concepts": [
+      "bug",
+      "incident",
+      "root cause",
+      "postmortem",
+      "ownership",
+      "ownership",
+      "accountability"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 5,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate owns the bug without deflecting to reviewers or tooling, describes the user-visible impact honestly, walks through isolation (logs, reproduction, bisection, instrumentation), and names a durable process change (test, guard, review rule, alert). Strong answers distinguish the trigger from the underlying cause.",
+    "rubric_1_to_5": {
+      "score_1": "Blames reviewers, QA, or the framework; cannot describe how the bug was found.",
+      "score_3": "Explains the bug and fix, but the impact is vague and the process change is 'I was more careful'.",
+      "score_5": "Quantifies impact, separates trigger from root cause, explains isolation methodically, and instituted a concrete preventive mechanism."
+    },
+    "follow_up_directions": [
+      "What monitoring would have caught it before a user did?",
+      "Why did your existing tests not cover that path?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_fail_003",
+    "short_title": "Being Wrong About a Technical Decision",
+    "question": "Describe a time you argued for a technical decision that turned out to be wrong. How did you find out, how did you tell the people who had gone along with you, and what did you do next?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_failure",
+    "primary_skill": "Intellectual Honesty",
+    "secondary_skills": [
+      "Accountability",
+      "Reversibility",
+      "Technical Communication"
+    ],
+    "concepts": [
+      "being wrong",
+      "reversal",
+      "accountability",
+      "technical decision",
+      "intellectual honesty"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate admits a genuine error in judgement, describes the evidence that changed their mind, explains how they communicated the reversal without hiding it, and how they limited the cost. Strong answers show they now reason differently about that class of decision.",
+    "rubric_1_to_5": {
+      "score_1": "Cannot produce a real example, or reframes the wrong decision as actually correct.",
+      "score_3": "Admits the mistake but focuses on the fix rather than the communication and the reasoning error.",
+      "score_5": "Names the flawed reasoning, the evidence that corrected it, the honest communication, and the cost-limiting action taken."
+    },
+    "follow_up_directions": [
+      "What signal did you ignore at the time, and why did you ignore it?",
+      "How do you now decide when a decision is worth revisiting?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_fail_004",
+    "short_title": "Missed Deadline & Scope Negotiation",
+    "question": "Tell me about a deadline you missed or nearly missed. What caused it, what did you do when you realized, and how did you communicate the risk to the people depending on you?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_failure",
+    "primary_skill": "Ownership & Accountability",
+    "secondary_skills": [
+      "Estimation",
+      "Stakeholder Communication",
+      "Scope Management"
+    ],
+    "concepts": [
+      "deadline",
+      "estimation",
+      "scope",
+      "communication",
+      "ownership",
+      "accountability"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate identifies a real cause (underestimated integration, hidden dependency, unclear requirements), describes early-warning behaviour versus last-minute disclosure, and explains how they renegotiated scope. Strong answers show they raised the flag before it was forced.",
+    "rubric_1_to_5": {
+      "score_1": "Says deadlines are never missed, or blames the deadline itself.",
+      "score_3": "Describes the miss and the recovery, but disclosure happened only at the deadline.",
+      "score_5": "Explains the estimation error, describes raising the risk early with options, and names what they now do differently when planning."
+    },
+    "follow_up_directions": [
+      "What would you have cut first if you had to ship something on the original date?",
+      "How do you estimate work you have never done before?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_collab_002",
+    "short_title": "Difficult Feedback on Someone Else's Work",
+    "question": "Tell me about a time you had to give difficult feedback on a teammate's code, design, or analysis. How did you raise it, how did they react, and what was the outcome for the work?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_collaboration",
+    "primary_skill": "Collaboration & Teamwork",
+    "secondary_skills": [
+      "Code Review",
+      "Constructive Feedback",
+      "Technical Communication"
+    ],
+    "concepts": [
+      "feedback",
+      "code review",
+      "conflict",
+      "collaboration",
+      "collaboration",
+      "teamwork"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate describes raising the issue with specific evidence rather than opinion, in the right channel and with the right framing (question first, then concern, then suggestion), handles defensiveness without escalating, and reports a real outcome. Strong answers distinguish feedback on the work from judgement of the person.",
+    "rubric_1_to_5": {
+      "score_1": "Avoided the feedback, escalated to a manager instead, or describes a personal attack.",
+      "score_3": "Gave the feedback but could not describe the framing or the other person's reaction.",
+      "score_5": "Uses specific evidence, adapts framing to the person, keeps the relationship intact, and the work measurably improved."
+    },
+    "follow_up_directions": [
+      "What would you have done if they had rejected the feedback outright?",
+      "How do you decide when a review comment is worth blocking a merge over?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_collab_003",
+    "short_title": "Blocked by Another Team or Person",
+    "question": "Describe a time you were blocked by another team, service owner, or teammate and it was slowing your work down. What did you do to unblock yourself, and how did you keep the relationship working?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_collaboration",
+    "primary_skill": "Collaboration & Teamwork",
+    "secondary_skills": [
+      "Cross-Team Communication",
+      "Escalation Judgement",
+      "Initiative"
+    ],
+    "concepts": [
+      "dependency",
+      "blocked",
+      "escalation",
+      "cross team",
+      "collaboration",
+      "teamwork"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate shows initiative (reducing the ask, providing a reproduction, offering a patch, proposing a workaround), escalates only after a reasonable attempt with context, and keeps the relationship intact. Strong answers show judgement about when escalation is appropriate rather than treating it as the first move.",
+    "rubric_1_to_5": {
+      "score_1": "Waited passively, or escalated immediately without trying to resolve it.",
+      "score_3": "Resolved the block but describes the other team as the problem rather than the constraint.",
+      "score_5": "Reduced the dependency, gave the other team everything they needed, escalated with context at the right moment, and preserved the relationship."
+    },
+    "follow_up_directions": [
+      "How long do you wait before escalating, and what makes you decide?",
+      "What would you have done if the other team had simply said no?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_collab_004",
+    "short_title": "Explaining Technical Risk to a Non-Technical Stakeholder",
+    "question": "Tell me about a time you had to explain a technical problem, risk, or trade-off to someone non-technical — a manager, a client, or a stakeholder. What did you say, and what decision came out of it?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_collaboration",
+    "primary_skill": "Technical Communication",
+    "secondary_skills": [
+      "Audience Adaptation",
+      "Risk Communication",
+      "Decision Support"
+    ],
+    "concepts": [
+      "stakeholder",
+      "communication",
+      "non technical",
+      "risk",
+      "technical communication"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/student-interviewing"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate translates the problem into impact and options rather than jargon, states the risk in terms of cost or user effect, and offers a recommendation with trade-offs. Strong answers show the stakeholder was able to make a real decision because of the explanation.",
+    "rubric_1_to_5": {
+      "score_1": "Used unexplained jargon, or simply forwarded the technical detail upward.",
+      "score_3": "Explained it clearly but presented no options or recommendation.",
+      "score_5": "Frames risk as impact, offers clear options with trade-offs, recommends one, and reports the decision that followed."
+    },
+    "follow_up_directions": [
+      "How did you check that they had actually understood the risk?",
+      "What did you leave out on purpose, and why?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_prior_001",
+    "short_title": "More High-Priority Work Than Time",
+    "question": "Tell me about a time you had more high-priority work than time to do it. How did you decide what to do first, what did you consciously drop, and who did you tell?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_prioritization",
+    "primary_skill": "Prioritization & Judgement",
+    "secondary_skills": [
+      "Prioritization",
+      "Trade-off Decisions",
+      "Stakeholder Communication"
+    ],
+    "concepts": [
+      "prioritization",
+      "trade off",
+      "scope",
+      "deadline",
+      "prioritization",
+      "judgement"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate names the actual criteria used (user impact, reversibility, dependency, risk), states what they deliberately dropped rather than claiming everything got done, and shows they told the affected people. Strong answers show the decision was explicit and reversible.",
+    "rubric_1_to_5": {
+      "score_1": "Claims they did everything, or picked tasks by whoever asked loudest.",
+      "score_3": "Prioritized sensibly but cannot say what was dropped or who was informed.",
+      "score_5": "States explicit criteria, names the dropped work and its consequence, informs stakeholders early, and revisits the order as facts changed."
+    },
+    "follow_up_directions": [
+      "What would you have dropped if the deadline had moved one week earlier?",
+      "How do you handle a stakeholder who insists their item is the exception?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_prior_002",
+    "short_title": "Deciding What Not to Build",
+    "question": "Describe a time you decided not to build something that had been requested — a feature, an abstraction, or a tool. Why did you decide against it, and how did you handle the person who wanted it?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_prioritization",
+    "primary_skill": "Prioritization & Judgement",
+    "secondary_skills": [
+      "Scope Discipline",
+      "Cost-Benefit Reasoning",
+      "Stakeholder Management"
+    ],
+    "concepts": [
+      "scope",
+      "yagni",
+      "over engineering",
+      "trade off",
+      "prioritization",
+      "judgement"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://www.geeksforgeeks.org/software-engineering/software-engineering-interview-questions-and-answers/"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate reasons about cost versus value (maintenance burden, complexity, unclear demand), proposes the smaller alternative that solved the real need, and communicates the decision without dismissing the requester. Strong answers show the decision was revisited when evidence changed.",
+    "rubric_1_to_5": {
+      "score_1": "Built everything requested, or refused without engaging with the underlying need.",
+      "score_3": "Declined the work with a reasonable argument but no alternative and no follow-up.",
+      "score_5": "Separates the request from the need, proposes a cheaper solution, explains the cost reasoning, and defines what evidence would change the decision."
+    },
+    "follow_up_directions": [
+      "What would have made you change your mind?",
+      "Did the smaller solution hold up, or did you eventually have to build the original?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "beh_prior_003",
+    "short_title": "Pushing Back on a Deadline or Request",
+    "question": "Tell me about a time you pushed back on a deadline, a request, or a technical direction you thought was wrong. How did you make the case, and what happened?",
+    "role": "all_technical_roles",
+    "phase": "realistic_simulation",
+    "question_type": "behavioral-evidence",
+    "category": "behavioral_prioritization",
+    "primary_skill": "Prioritization & Judgement",
+    "secondary_skills": [
+      "Assertiveness",
+      "Evidence-Based Pushback",
+      "Disagree and Commit"
+    ],
+    "concepts": [
+      "pushback",
+      "disagree and commit",
+      "negotiation",
+      "prioritization",
+      "prioritization",
+      "judgement"
+    ],
+    "difficulty": "Medium",
+    "estimated_duration_minutes": 4,
+    "source_basis": "public_interview_guidance",
+    "source_urls": [
+      "https://careers.microsoft.com/v2/global/en/hiring-tips/interview-tips"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "public_interview_guidance",
+      "family": "behavioral",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate pushes back with evidence and a concrete alternative rather than refusal, keeps the conversation about the work, and accepts the final decision once it is made. Strong answers show they pushed back at the right time and knew when to stop.",
+    "rubric_1_to_5": {
+      "score_1": "Never pushes back, or pushes back by refusing to do the work.",
+      "score_3": "Raised the concern but without evidence or an alternative, and dropped it immediately.",
+      "score_5": "Presents evidence and options, states the risk clearly, accepts the decision once made, and commits to it fully."
+    },
+    "follow_up_directions": [
+      "What would you have done if the decision had gone against you?",
+      "How do you tell the difference between a risk worth escalating and a preference?"
+    ],
+    "version": "2026.1"
   }
 ]

@@ -31,6 +31,10 @@ CATEGORY_ALIASES: Dict[str, str] = {
     "Two Pointers & Sliding Windows": "dsa_two_pointers",
     "Trees, Graphs & Dynamic Programming": "dsa_trees_graphs_dp",
     "Complexity Analysis & Edge Cases": "dsa_complexity",
+    "DBMS & SQL": "sql",
+    "OOP & Language Internals": "oop",
+    "Computer Networks": "networking",
+    "Operating Systems": "operating_systems",
     "System Design & Architecture": "system_design_architecture",
     "API Contracts & Idempotent Design": "api_contracts_idempotency",
     "Database Indexing & Query Plans": "db_indexing_query_plans",
@@ -546,6 +550,7 @@ class RoleAwareTaxonomyManager:
         seed: str = "",
         session_asked_concepts: Optional[List[str]] = None,
         asked_history: Optional[List[str]] = None,
+        scope_keys: Optional[List[str]] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Deterministic, blueprint-driven selection.
@@ -558,6 +563,11 @@ class RoleAwareTaxonomyManager:
         `asked_history` is ordered least-recently-asked first, so once every
         question has been seen the candidate cycles through old material instead
         of being asked the same question twice in a row.
+
+        `scope_keys` is the round's canonical topic set (the blueprint's
+        category keys). When provided, selection never leaves that set: a
+        behavioral round cannot silently drift into role-specific AI questions
+        just because the behavioral pool is dry.
         """
         if not self.questions:
             return None
@@ -568,6 +578,19 @@ class RoleAwareTaxonomyManager:
         key = category_key(category)
         asked_concepts = [str(c).lower() for c in (session_asked_concepts or []) if str(c).strip()]
         asked_rank = {str(qid): idx for idx, qid in enumerate(asked_history or [])}
+
+        scope = {category_key(k) for k in (scope_keys or []) if str(k).strip()}
+        scope_questions = [q for q in self.questions if q.get("category_key") in scope] if scope else []
+        if scope and not scope_questions:
+            # The chosen round has no authored questions at all. Widen rather
+            # than return nothing, but make the data gap loud in the logs.
+            logger.warning(
+                "Round scope %s has no authored questions; falling back to the full bank.",
+                sorted(scope),
+            )
+            scope = set()
+        # Everything below selects from the round's own pool when scoped.
+        pool_questions = scope_questions if scope else list(self.questions)
 
         def recency(q: Dict[str, Any]) -> int:
             # -1 sorts first: a never-asked question always beats a repeat.
@@ -597,26 +620,37 @@ class RoleAwareTaxonomyManager:
             lambda q: by_category(q),
             lambda q: by_role(q) and by_phase(q),
             lambda q: by_role(q),
+            # Last resort inside a scoped round: another topic from the same
+            # round. A behavioral round stays behavioral even when its exact
+            # category is exhausted.
+            lambda q: True,
         ]
 
         exhausted = False
         chosen_pool: List[Dict[str, Any]] = []
         for predicate in tiers:
-            pool = [q for q in self.questions if eligible(q) and predicate(q)]
+            pool = [q for q in pool_questions if eligible(q) and predicate(q)]
             if pool:
                 chosen_pool = pool
                 break
         if not chosen_pool:
-            # This topic is used up. Fill from other topics rather than asking a
-            # repeat; the caller tells the candidate why the topic changed.
-            chosen_pool = [q for q in self.questions if eligible(q) and not by_category(q)]
+            if scope:
+                # Every scoped question has already been asked. Recycle within
+                # the round instead of escaping to the wider role taxonomy.
+                exhausted = True
+                chosen_pool = list(pool_questions)
+            else:
+                # This topic is used up. Fill from other topics rather than
+                # asking a repeat; the caller tells the candidate why the topic
+                # changed.
+                chosen_pool = [q for q in pool_questions if eligible(q) and not by_category(q)]
         if not chosen_pool:
-            chosen_pool = [q for q in self.questions if eligible(q)]
+            chosen_pool = [q for q in pool_questions if eligible(q)]
         if not chosen_pool:
             # Every question has been asked at least once; recycle the one that
             # was asked longest ago instead of looping in id order.
             exhausted = True
-            chosen_pool = list(self.questions)
+            chosen_pool = list(pool_questions)
             if not chosen_pool:
                 return None
 
@@ -749,6 +783,22 @@ def build_interview_blueprint(
             "Project Failure & Ownership (STAR)",
             "Constructive Disagreement & Collaboration",
             "Prioritization Under Deadline Pressure"
+        ]
+    elif interviewer_style == "technical":
+        categories = [
+            "Data Structures & Algorithms",
+            "DBMS & SQL",
+            "OOP & Language Internals",
+            "Computer Networks",
+            "Operating Systems"
+        ]
+    elif interviewer_style == "mixed":
+        categories = [
+            "Data Structures & Algorithms",
+            "DBMS & SQL",
+            "System Design & Architecture",
+            "Project Deep Dive & Decisions",
+            "Behavioral Evidence & Ownership"
         ]
     elif interviewer_style in {"aiml", "ai", "ml"}:
         categories = [
@@ -1053,6 +1103,12 @@ def get_next_question_for_turn(
     target_difficulty = ramp_difficulty(
         blueprint.get("base_difficulty", "Medium"), turn_index, total_turns
     )
+    # Keep selection inside the chosen round's topic set. Without this a
+    # behavioral round drifts into role-specific AI questions as soon as its own
+    # pool runs dry.
+    round_scope = [
+        str(k) for k in (category_keys or []) if str(k).strip()
+    ] or [category_key(c) for c in categories]
     curated = taxonomy_mgr.get_curated_question(
         role=target_role,
         phase=target_phase,
@@ -1063,6 +1119,7 @@ def get_next_question_for_turn(
         seed=session_seed,
         session_asked_concepts=session_asked_concepts,
         asked_history=asked_history,
+        scope_keys=round_scope,
     )
 
     if curated:
