@@ -357,50 +357,85 @@
   background-clip: padding-box;
 }
 
-/* Orb motion — kept from the studio, slowed and made optional */
-@keyframes orb-breathe {
+/* Orb motion — layered sine waves, slow halo, and a busy orbit ring.
+   Waves animate the individual `translate` property so the inline
+   vertical lift (a `transform`) can coexist with the horizontal drift. */
+@keyframes orb-wave-drift {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -50% 0;
+  }
+}
+
+@keyframes orb-halo-pulse {
   0%,
   100% {
-    transform: scale(1);
-    opacity: 0.94;
+    opacity: 0.16;
+    scale: 0.94;
   }
   50% {
-    transform: scale(1.025);
-    opacity: 1;
+    opacity: 0.32;
+    scale: 1.04;
   }
 }
 
-@keyframes orb-slow-rotation {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
+@keyframes orb-ring-rotate {
+  to {
+    rotate: 360deg;
   }
 }
 
-@keyframes orb-wave-reactive {
+@keyframes orb-bar-breathe {
   0%,
   100% {
-    transform: scale(0.985);
+    transform: scaleY(0.55);
   }
   50% {
-    transform: scale(1.035);
+    transform: scaleY(1);
   }
 }
 
-.orb-idle {
-  animation: orb-breathe 4s ease-in-out infinite;
+.orb-wave-deep {
+  animation: orb-wave-drift 24s linear infinite;
 }
-.orb-listening {
-  animation: orb-wave-reactive 1.6s ease-in-out infinite;
+.orb-wave-slow {
+  animation: orb-wave-drift 18s linear infinite;
 }
-.orb-thinking {
-  animation: orb-breathe 2.2s ease-in-out infinite,
-    orb-slow-rotation 16s linear infinite;
+.orb-wave-mid {
+  animation: orb-wave-drift 12s linear infinite;
 }
-.orb-speaking {
-  animation: orb-wave-reactive 1.2s ease-in-out infinite;
+.orb-wave-fast {
+  animation: orb-wave-drift 8s linear infinite;
+}
+
+/* Live audio makes the water move faster. */
+.orb-live .orb-wave-deep {
+  animation-duration: 16s;
+}
+.orb-live .orb-wave-slow {
+  animation-duration: 10s;
+}
+.orb-live .orb-wave-mid {
+  animation-duration: 6.5s;
+}
+.orb-live .orb-wave-fast {
+  animation-duration: 4.5s;
+}
+
+.orb-halo {
+  animation: orb-halo-pulse 5.5s ease-in-out infinite;
+}
+.orb-halo-calm {
+  animation: orb-halo-pulse 10s ease-in-out infinite;
+}
+.orb-ring-spin {
+  animation: orb-ring-rotate 9s linear infinite;
+}
+.orb-bar-idle {
+  transform-origin: center;
+  animation: orb-bar-breathe 1.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

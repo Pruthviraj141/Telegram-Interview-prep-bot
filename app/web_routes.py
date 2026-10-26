@@ -421,9 +421,9 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         tracker_items = await db.list_placement_tracker_items(user["id"])
         resume = await db.get_web_resume(user["id"])
 
-        # Compute readiness from completed sessions
-        completed = [s for s in sessions if s.get("status") in {"completed", "partial_completed"} and s.get("overall_score")]
-        avg_score = round(sum(s["overall_score"] for s in completed) / len(completed), 1) if completed else None
+        # Readiness spans the whole history; `sessions` above is only the recent page.
+        scores = await db.list_web_scored_sessions(user["id"])
+        avg_score = round(sum(scores) / len(scores), 1) if scores else None
 
         readiness_label = "Begin your first voice practice"
         if avg_score:
@@ -449,7 +449,7 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             "overall_readiness": {
                 "score": avg_score,
                 "label": readiness_label,
-                "sessions_evaluated": len(completed)
+                "sessions_evaluated": len(scores)
             },
             "recent_sessions": sessions,
             "active_tracker_count": len(tracker_items),

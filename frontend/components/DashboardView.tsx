@@ -5,11 +5,9 @@ import Link from "next/link";
 import {
   ArrowRight,
   Award,
-  Briefcase,
   Building2,
   CalendarDays,
   Check,
-  Circle,
   ClipboardCheck,
   Mic,
   Target,
@@ -32,7 +30,6 @@ import { TopicTile } from "@/components/TopicTile";
 import {
   buildActivity,
   buildTopicStats,
-  completedRounds,
   pickNextUp,
   scoreSeries,
   TOPIC_LABELS,
@@ -92,7 +89,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const activity = buildActivity(sessions);
   const activityTotal = activity.reduce((sum, day) => sum + day.count, 0);
   const scores = scoreSeries(sessions);
-  const finished = completedRounds(sessions);
 
   const isNewUser =
     sessions.length === 0 && activeTrackerCount === 0 && readinessScore === null;
@@ -197,6 +193,84 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     </Card>
   );
 
+  const firstSteps = [
+    {
+      label: "Set up your profile",
+      description: "Target role, company and seniority sharpen the questions.",
+      href: "/settings",
+      Icon: UserRound,
+      done: user.onboarding_state === "COMPLETED",
+    },
+    {
+      label: "Run one round",
+      description: "Three questions, spoken out loud, about eight minutes.",
+      href: "/interview",
+      Icon: Mic,
+      done: sessions.length > 0,
+    },
+    {
+      label: "Read the debrief",
+      description: "Pick one fix and take it into the next round.",
+      href: "/history",
+      Icon: ClipboardCheck,
+      done: sessionsEvaluated > 0,
+    },
+  ];
+
+  const firstStepsCard = (
+    <Card className="min-w-0">
+      <div className="border-b border-line p-5 sm:px-6">
+        <h2 className="text-base font-semibold tracking-tight text-ink">
+          First three steps
+        </h2>
+        <p className="mt-1 text-sm text-ink-secondary">
+          Everything else unlocks once you have a round on record.
+        </p>
+      </div>
+      <ol className="grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {firstSteps.map((step, index) => {
+          const Icon = step.Icon;
+          return (
+            <li key={step.label}>
+              <Link
+                href={step.href}
+                className="flex h-full items-start gap-3 p-5 transition-colors duration-150 hover:bg-surface-sunken"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                    step.done
+                      ? "bg-success-subtle text-success-ink"
+                      : "bg-surface-sunken text-ink-secondary",
+                  )}
+                >
+                  {step.done ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <span className="tabular">{index + 1}</span>
+                  )}
+                </span>
+                <span className="min-w-0 space-y-0.5">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                    {step.label}
+                    <Icon
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 text-ink-tertiary"
+                    />
+                  </span>
+                  <span className="block text-xs leading-relaxed text-ink-secondary">
+                    {step.description}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </Card>
+  );
+
   const topicMap = (
     <Card className="min-w-0">
       <div className="border-b border-line p-5 sm:p-6">
@@ -220,111 +294,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     </Card>
   );
 
-  const journey = [
-    {
-      label: "Set up",
-      description: "Profile, resume and target role",
-      href: "/settings",
-      Icon: UserRound,
-      done: user.onboarding_state === "COMPLETED",
-    },
-    {
-      label: "Practice",
-      description: "Answer one round out loud",
-      href: "/interview",
-      Icon: Mic,
-      done: sessions.length > 0,
-    },
-    {
-      label: "Debrief",
-      description: "Read the feedback and pick one fix",
-      href: "/history",
-      Icon: ClipboardCheck,
-      done: sessionsEvaluated > 0 || scores.length > 0,
-    },
-    {
-      label: "Track",
-      description: "Log applications you have in flight",
-      href: "/tracker",
-      Icon: Briefcase,
-      done: activeTrackerCount > 0,
-    },
-  ];
-
-  const currentStep = journey.findIndex((step) => !step.done);
-
-  const journeyCard =
-    finished >= 3 ? null : (
-      <Card className="min-w-0">
-        <div className="border-b border-line p-5">
-          <h2 className="text-base font-semibold tracking-tight text-ink">
-            Your journey
-          </h2>
-          <p className="mt-1 text-sm text-ink-secondary">
-            Four steps from setup to offers.
-          </p>
-        </div>
-        <ol className="grid grid-cols-1 gap-1 p-3 sm:grid-cols-4 sm:gap-2 sm:p-4 lg:grid-cols-1">
-          {journey.map((step, index) => {
-            const isCurrent = index === currentStep;
-            const status = step.done
-              ? "Done"
-              : isCurrent
-                ? "Current"
-                : "Not yet";
-            const Icon = step.Icon;
-            return (
-              <li key={step.label}>
-                <Link
-                  href={step.href}
-                  aria-current={isCurrent ? "step" : undefined}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-lg border px-3 py-2 transition-colors duration-150 sm:flex-col sm:gap-1.5 sm:px-1 sm:py-2 sm:text-center lg:flex-row lg:text-left",
-                    isCurrent
-                      ? "border-accent-line bg-accent-subtle"
-                      : "border-transparent hover:bg-surface-sunken",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                      step.done
-                        ? "bg-success-subtle text-success-ink"
-                        : isCurrent
-                          ? "bg-accent-strong text-on-accent"
-                          : "bg-surface-sunken text-ink-tertiary",
-                    )}
-                  >
-                    {step.done ? (
-                      <Check aria-hidden="true" className="h-3.5 w-3.5" />
-                    ) : (
-                      <Icon aria-hidden="true" className="h-3.5 w-3.5" />
-                    )}
-                  </span>
-                  <span className="min-w-0 sm:space-y-0.5">
-                    <span className="block text-xs font-medium text-ink">
-                      {step.label}
-                    </span>
-                    <span className="block text-[11px] leading-4 text-ink-tertiary sm:sr-only lg:not-sr-only">
-                      {status}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-        {currentStep >= 0 ? (
-          <p className="border-t border-line px-5 py-3 text-xs leading-relaxed text-ink-secondary">
-            <span className="font-medium text-ink">
-              {journey[currentStep].label}:
-            </span>{" "}
-            {journey[currentStep].description}
-          </p>
-        ) : null}
-      </Card>
-    );
-
   const cellTone = (count: number) =>
     count === 0
       ? "border border-line bg-surface-sunken"
@@ -334,122 +303,134 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           ? "bg-accent/50"
           : "bg-accent-strong";
 
-  const statusCard = (
+  const statLink = (href: string) =>
+    "rounded-lg border border-line p-3 transition-colors duration-150 hover:border-line-strong hover:bg-surface-sunken";
+
+  const progressCard = (
     <Card className="min-w-0">
-      <div className="flex items-start justify-between gap-3 border-b border-line p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line p-5 sm:p-6">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-ink">
-            Status
+          <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight text-ink">
+            <TrendingUp aria-hidden="true" className="h-4 w-4 text-ink-tertiary" />
+            Progress
           </h2>
           <p className="mt-1 text-sm text-ink-secondary">
             Averaged from your completed, scored rounds.
           </p>
         </div>
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-ink-secondary">
-          <TrendingUp aria-hidden="true" className="h-4 w-4" />
-        </span>
+        <Link
+          href="/history"
+          className="inline-flex items-center gap-1 text-sm font-medium text-accent-strong hover:underline"
+        >
+          All debriefs
+          <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
-      <div className="space-y-4 p-5">
-        {readinessScore === null ? (
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-ink">No scored rounds yet</p>
-            <p className="text-sm leading-relaxed text-ink-secondary">
-              Readiness appears after your first completed round is evaluated.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="tabular text-3xl font-semibold tracking-tight text-ink">
-                {readinessScore.toFixed(1)}
-              </span>
-              <span className="text-sm text-ink-tertiary">/ 5.0</span>
-            </div>
-            <Progress
-              value={readinessScore}
-              max={5}
-              label="Average score"
-              hideLabel
-            />
-            {readinessLabel ? (
-              <p className="text-xs leading-relaxed text-ink-secondary">
-                {readinessLabel}
+      <div className="grid gap-5 p-5 sm:p-6 md:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] md:gap-8">
+        <div className="space-y-2 md:border-r md:border-line md:pr-8">
+          {readinessScore === null ? (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-ink">No scored rounds yet</p>
+              <p className="text-sm leading-relaxed text-ink-secondary">
+                Readiness appears after your first completed round is evaluated.
               </p>
-            ) : null}
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-2 border-t border-line pt-4">
-          <Link
-            href="/history"
-            className="rounded-lg border border-line p-3 transition-colors duration-150 hover:border-line-strong hover:bg-surface-sunken"
-          >
-            <span className="flex items-center gap-1.5 text-xs text-ink-tertiary">
-              <ClipboardCheck aria-hidden="true" className="h-3.5 w-3.5" />
-              Evaluated
-            </span>
-            <span className="tabular mt-1 block text-lg font-semibold text-ink">
-              {sessionsEvaluated}
-            </span>
-          </Link>
-          <Link
-            href="/tracker"
-            className="rounded-lg border border-line p-3 transition-colors duration-150 hover:border-line-strong hover:bg-surface-sunken"
-          >
-            <span className="flex items-center gap-1.5 text-xs text-ink-tertiary">
-              <Building2 aria-hidden="true" className="h-3.5 w-3.5" />
-              Applications
-            </span>
-            <span className="tabular mt-1 block text-lg font-semibold text-ink">
-              {activeTrackerCount}
-            </span>
-          </Link>
-        </div>
-
-        <div className="border-t border-line pt-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xs font-medium text-ink-secondary">
-              Sessions, last 14 days
-            </p>
-            <span className="tabular text-xs text-ink-tertiary">
-              {activityTotal}
-            </span>
-          </div>
-          <ol
-            className="mt-2 flex items-end gap-1"
-            aria-label={`Sessions per day, last 14 days. ${activityTotal} total.`}
-          >
-            {activity.map((day) => (
-              <li key={day.key} className="min-w-0 flex-1">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "block h-6 rounded-[3px]",
-                    cellTone(day.count),
-                  )}
-                />
-                <span className="sr-only">
-                  {`${day.label}: ${day.count} ${day.count === 1 ? "session" : "sessions"}`}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="tabular text-4xl font-semibold tracking-tight text-ink">
+                  {readinessScore.toFixed(1)}
                 </span>
-              </li>
-            ))}
-          </ol>
+                <span className="text-sm text-ink-tertiary">/ 5.0</span>
+              </div>
+              <Progress
+                value={readinessScore}
+                max={5}
+                label="Average score"
+                hideLabel
+              />
+              {readinessLabel ? (
+                <p className="text-xs leading-relaxed text-ink-secondary">
+                  {readinessLabel}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
 
-        {scores.length >= 3 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
-            <div>
-              <p className="text-xs font-medium text-ink-secondary">
-                Score trend
-              </p>
-              <p className="text-[11px] text-ink-tertiary">
-                {scores.length} scored rounds
-              </p>
-            </div>
-            <Sparkline values={scores} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-2">
+            <Link href="/history" className={statLink("/history")}>
+              <span className="flex items-center gap-1.5 text-xs text-ink-tertiary">
+                <ClipboardCheck aria-hidden="true" className="h-3.5 w-3.5" />
+                Evaluated
+              </span>
+              <span className="tabular mt-1 block text-lg font-semibold text-ink">
+                {sessionsEvaluated}
+              </span>
+            </Link>
+            <Link href="/history" className={statLink("/history")}>
+              <span className="flex items-center gap-1.5 text-xs text-ink-tertiary">
+                <CalendarDays aria-hidden="true" className="h-3.5 w-3.5" />
+                Rounds
+              </span>
+              <span className="tabular mt-1 block text-lg font-semibold text-ink">
+                {sessions.length}
+              </span>
+            </Link>
+            <Link href="/tracker" className={statLink("/tracker")}>
+              <span className="flex items-center gap-1.5 text-xs text-ink-tertiary">
+                <Building2 aria-hidden="true" className="h-3.5 w-3.5" />
+                Applied
+              </span>
+              <span className="tabular mt-1 block text-lg font-semibold text-ink">
+                {activeTrackerCount}
+              </span>
+            </Link>
           </div>
-        ) : null}
+
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-xs font-medium text-ink-secondary">
+                Sessions, last 14 days
+              </p>
+              <span className="tabular text-xs text-ink-tertiary">
+                {activityTotal}
+              </span>
+            </div>
+            <ol
+              className="mt-2 flex items-end gap-1"
+              aria-label={`Sessions per day, last 14 days. ${activityTotal} total.`}
+            >
+              {activity.map((day) => (
+                <li key={day.key} className="min-w-0 flex-1">
+                  <span
+                    aria-hidden="true"
+                    className={cn("block h-7 rounded-[3px]", cellTone(day.count))}
+                  />
+                  <span className="sr-only">
+                    {`${day.label}: ${day.count} ${day.count === 1 ? "session" : "sessions"}`}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {scores.length >= 3 ? (
+            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+              <div>
+                <p className="text-xs font-medium text-ink-secondary">
+                  Score trend
+                </p>
+                <p className="text-[11px] text-ink-tertiary">
+                  {scores.length} scored rounds
+                </p>
+              </div>
+              <Sparkline values={scores} />
+            </div>
+          ) : null}
+        </div>
       </div>
     </Card>
   );
@@ -501,8 +482,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 className="flex flex-col gap-3 border-t border-line px-5 py-4 first:border-t-0 hover:bg-surface-sunken sm:flex-row sm:items-center sm:justify-between sm:px-6"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="tabular flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-sunken text-xs font-semibold text-ink-secondary">
-                    Q{(session.current_turn_index || 0) + 1}
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold",
+                      isInProgress
+                        ? "tabular border-line bg-surface-sunken text-ink-secondary"
+                        : "border-line bg-surface-sunken text-ink-tertiary",
+                    )}
+                  >
+                    {isInProgress ? (
+                      `Q${(session.current_turn_index || 0) + 1}`
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
                   </span>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -573,37 +566,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return (
       <div className="space-y-5">
         {hero}
-        {journeyCard}
+        {firstStepsCard}
+        {topicMap}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-6">
-      <div className="order-1 min-w-0 lg:col-start-1 lg:row-start-1">
-        {hero}
-      </div>
-      {journeyCard ? (
-        <div className="order-2 min-w-0 lg:col-start-2 lg:row-start-1">
-          {journeyCard}
-        </div>
-      ) : null}
-      <div className="order-3 min-w-0 lg:col-start-1 lg:row-start-2">
-        {topicMap}
-      </div>
-      <div className="order-4 min-w-0 lg:col-start-1 lg:row-start-3">
-        {recentCard}
-      </div>
-      <div
-        className={cn(
-          "order-5 min-w-0 lg:col-start-2",
-          journeyCard
-            ? "lg:row-span-2 lg:row-start-2"
-            : "lg:row-span-3 lg:row-start-1",
-        )}
-      >
-        {statusCard}
-      </div>
+    <div className="space-y-5">
+      {hero}
+      {progressCard}
+      {topicMap}
+      {recentCard}
     </div>
   );
 };

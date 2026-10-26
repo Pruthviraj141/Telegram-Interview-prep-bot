@@ -1759,6 +1759,18 @@ class Database:
                 results.append(d)
             return results
 
+    async def list_web_scored_sessions(self, clerk_id: str) -> List[float]:
+        """Overall scores of every finished, evaluated session (all history, not just the recent page)."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT overall_score FROM web_interview_sessions
+                WHERE clerk_id = ?
+                  AND status IN ('completed', 'partial_completed')
+                  AND overall_score IS NOT NULL
+            """, (clerk_id,))
+            rows = await cursor.fetchall()
+            return [float(r[0]) for r in rows]
+
     async def update_web_interview_session(self, session_id: str, clerk_id: str, **kwargs) -> None:
         """Update interview session state or debrief."""
         now = utc_now_iso()
