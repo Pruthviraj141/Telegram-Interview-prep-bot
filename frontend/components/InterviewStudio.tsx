@@ -34,6 +34,8 @@ import { useDraft } from "@/lib/use-draft";
 interface InterviewStudioProps {
   initialSession: InterviewSession;
   initialTurn: InterviewTurn;
+  /** Let the setup page drop its cached session once the round is over. */
+  onRoundClosed?: () => void;
 }
 
 interface TurnEvaluationView {
@@ -69,7 +71,11 @@ function honestProvenanceNote(turn: InterviewTurn): string {
   }
 }
 
-export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession, initialTurn }) => {
+export const InterviewStudio: React.FC<InterviewStudioProps> = ({
+  initialSession,
+  initialTurn,
+  onRoundClosed,
+}) => {
   const router = useRouter();
   const [session, setSession] = useState<InterviewSession>(initialSession);
   const [currentTurn, setCurrentTurn] = useState<InterviewTurn>(initialTurn);
@@ -185,6 +191,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     } catch {
       // Storage may be unavailable; drafts are optional.
     }
+    // The setup page keeps the session in state; without this it would keep
+    // rendering the studio after a zero-answer close.
+    onRoundClosed?.();
     router.replace(href);
   };
 

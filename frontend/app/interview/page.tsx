@@ -457,7 +457,17 @@ function InterviewContent() {
 
   // Active studio turn
   if (activeSession && currentTurn) {
-    return <InterviewStudio initialSession={activeSession} initialTurn={currentTurn} />;
+    return (
+      <InterviewStudio
+        initialSession={activeSession}
+        initialTurn={currentTurn}
+        onRoundClosed={() => {
+          setActiveSession(null);
+          setCurrentTurn(null);
+          setResumable(null);
+        }}
+      />
+    );
   }
 
   return (
