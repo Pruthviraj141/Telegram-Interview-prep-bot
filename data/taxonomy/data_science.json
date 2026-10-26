@@ -32,7 +32,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "data_scientist",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Running total: SUM(amount) OVER (PARTITION BY user_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW). 2nd highest order: use a CTE with DENSE_RANK() OVER (PARTITION BY user_id ORDER BY amount DESC) as rnk, then filter WHERE rnk = 2. Difference: ROW_NUMBER() assigns strictly unique integers (1, 2, 3), RANK() skips ranks on ties (1, 2, 2, 4), DENSE_RANK() does not skip ranks on ties (1, 2, 2, 3).",
     "rubric_1_to_5": {
@@ -77,7 +78,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "data_scientist",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "1) Check Sample Ratio Mismatch (SRM) via Chi-Square goodness-of-fit test on traffic allocation (e.g. 50/50 split). If SRM fails, experiment is corrupted. 2) Peeking problem: stopping early because p < 0.01 inflates Type I error (false positives). Need pre-calculated sample size or sequential testing (always-valid p-values). 3) Novelty effect / day-of-week seasonality (test must run at least 1-2 full business cycles, e.g. 7-14 days). 4) Guardrail metrics: refund rate, server errors, page load latency, customer complaints.",
     "rubric_1_to_5": {
@@ -123,7 +125,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "data_scientist",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "P-value is the probability of observing data as extreme or more extreme than what was measured, assuming the null hypothesis (no true effect) is true. It is NOT the probability that the null hypothesis is true. With massive sample sizes (e.g. 10 million users), a trivial lift of 0.001% can achieve p < 0.001, but cost more to maintain than it generates. Confidence intervals show both the point estimate and the plausible range of effect size.",
     "rubric_1_to_5": {

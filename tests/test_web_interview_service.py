@@ -173,3 +173,39 @@ def test_question_deduplication_and_no_two_sum_repeat():
     # Verify that multiple calls sample varied questions from the pool
     assert len(picked_questions) >= 1
 
+
+def test_curated_selection_skips_asked_history():
+    from app.services.web_interview_service import taxonomy_mgr
+
+    rag = [q for q in taxonomy_mgr.questions if q.get("category_key") == "rag"]
+    assert len(rag) >= 2, "test needs a topic with at least two curated questions"
+    already = str(rag[0]["id"])
+
+    picked = taxonomy_mgr.get_curated_question(
+        role="AI / Machine Learning Engineer",
+        phase=str(rag[0].get("phase") or "technical"),
+        category="rag",
+        exclude_ids={already},
+        asked_history=[already],
+    )
+    assert picked is not None
+    assert picked["id"] != already
+
+
+def test_curated_selection_recycles_longest_rested():
+    from app.services.web_interview_service import taxonomy_mgr
+
+    ids = [str(q["id"]) for q in taxonomy_mgr.questions]
+    oldest, second = ids[0], ids[1]
+
+    picked = taxonomy_mgr.get_curated_question(
+        role="Software Engineer",
+        phase="technical",
+        category="dsa_general",
+        exclude_ids=set(ids),
+        asked_history=[oldest, second] + ids[2:],
+    )
+    assert picked is not None
+    assert picked["id"] == oldest
+
+

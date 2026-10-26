@@ -1838,6 +1838,25 @@ class Database:
             rows = await cursor.fetchall()
             return [r[0] for r in rows if r[0]]
 
+    async def get_candidate_asked_history(self, clerk_id: str) -> List[str]:
+        """
+        Question IDs this candidate has already seen, ordered oldest-asked first.
+
+        The caller uses this as a soft rotation signal: never-asked questions come
+        first, and once the bank is exhausted the longest-rested one is recycled.
+        """
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("""
+                SELECT t.question_id, MAX(t.created_at) AS last_asked
+                FROM web_interview_turns t
+                JOIN web_interview_sessions s ON t.session_id = s.id
+                WHERE s.clerk_id = ? AND t.question_id IS NOT NULL AND t.question_id != ''
+                GROUP BY t.question_id
+                ORDER BY last_asked ASC
+            """, (clerk_id,))
+            rows = await cursor.fetchall()
+            return [r[0] for r in rows if r[0]]
+
     async def get_web_interview_turn(self, turn_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a single turn."""
         async with aiosqlite.connect(self.db_path) as db:

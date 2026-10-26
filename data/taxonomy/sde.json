@@ -32,7 +32,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Candidate should use a HashSet for O(1) lookups. To maintain linear total time, only start sequence expansion if (num - 1) is not in the set (i.e. num is the sequence start). Address empty array, duplicates, negative numbers, and large ranges.",
     "rubric_1_to_5": {
@@ -79,7 +80,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Candidate explains that two pointers / sliding window requires monotonic sums (fails with negative values). Correct approach tracks prefix sums in a HashMap (prefix_sum -> count). Initialize map with {0: 1} to count subarrays starting from index 0. O(n) time and O(n) space.",
     "rubric_1_to_5": {
@@ -126,7 +128,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "B-Tree composite indexes sort lexicographically by the first column, then the second. Equality on user_id isolates a contiguous range of user records, allowing range scan on created_at. Putting created_at first forces scanning all records across all users with created_at > ?, rendering user_id filtering inefficient.",
     "rubric_1_to_5": {
@@ -173,7 +176,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Processes have isolated address spaces (page tables); threads share heap, code, and file descriptors but have independent program counters and stacks. 'counter++' is not atomic: it compiles to Read (load into register), Modify (increment), and Write (store back). Context switches between read and store cause lost updates.",
     "rubric_1_to_5": {
@@ -220,7 +224,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Candidate checks downstream dependencies (payment gateway, database, cache) and connection pool exhaustion (DB pool, HTTP client pool). Inspects thread state/thread dumps (blocked threads, lock contention), distributed traces (Jaeger/OpenTelemetry) to identify which span takes time, network latency, and GC pauses.",
     "rubric_1_to_5": {
@@ -266,7 +271,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Client generates a unique Idempotency-Key (UUID v4) per user checkout attempt and passes it in header. Server stores idempotency key with unique database constraint or distributed lock/cache. If key exists with completed status, return cached response; if in-progress, return 409 or wait; if new, process within DB transaction.",
     "rubric_1_to_5": {
@@ -313,7 +319,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "software_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "In Python, the GIL impacts thread scheduling, but I/O or C-extensions release it. Double-checked locking in some languages (Java/C++) suffers from instruction reordering unless memory barriers/volatile are used. In Python, module-level import is naturally thread-safe. Candidate discusses stress testing with multi-threading harness, checking dictionary mutation race conditions, and unit testing with high concurrency.",
     "rubric_1_to_5": {

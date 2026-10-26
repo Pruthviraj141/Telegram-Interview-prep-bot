@@ -229,6 +229,34 @@ def is_semantic_duplicate(text: str, prior_texts: List[str]) -> bool:
     return False
 
 
+DIFFICULTY_LADDER = ["easy", "easy-medium", "medium", "medium-hard", "hard"]
+
+
+def _difficulty_rank(value: str) -> int:
+    v = (value or "medium").lower().strip()
+    if "easy" in v and ("medium" in v or "med" in v):
+        return 1
+    if "easy" in v:
+        return 0
+    if "hard" in v and "medium" in v:
+        return 3
+    if "hard" in v:
+        return 4
+    return 2
+
+
+def ramp_difficulty(base: str, turn_index: int, total_turns: int) -> str:
+    """
+    Later turns ask for one notch more depth, never above hard. Short rounds
+    (fewer than four questions) keep the seniority baseline untouched so a
+    fresher is not thrown a hard question at the end of a two-question drill.
+    """
+    rank = _difficulty_rank(base)
+    if total_turns >= 4 and turn_index >= total_turns // 2 + 1:
+        rank = min(len(DIFFICULTY_LADDER) - 1, rank + 1)
+    return DIFFICULTY_LADDER[rank]
+
+
 def load_source_registry() -> Dict[str, Dict[str, Any]]:
     """Loads the verified public source registry, indexed by URL."""
     global _source_registry_cache
@@ -374,7 +402,30 @@ class RoleAwareTaxonomyManager:
         basis = q.get("source_basis", "curated_taxonomy")
         if basis not in SOURCE_BASIS_VALUES:
             logger.warning(f"Question {q.get('id')} has unknown source_basis '{basis}'")
+        self._normalize_provenance(q)
         return q
+
+    @staticmethod
+    def _normalize_provenance(q: Dict[str, Any]) -> None:
+        """
+        A source is only listed when its URL exists in the verified registry.
+        Anything else is honestly labelled generated practice, and the unverified
+        URLs are cleared instead of being shown to the candidate.
+        """
+        urls = [u for u in (q.get("source_urls") or []) if isinstance(u, str)]
+        verified = resolve_sources(urls)
+        if verified:
+            q["provenance_class"] = "source_listed"
+            q["source_urls"] = [src["url"] for src in verified]
+        else:
+            q["provenance_class"] = "ai_generated"
+            q["source_urls"] = []
+        provenance = q.get("provenance")
+        if not isinstance(provenance, dict):
+            provenance = {}
+        provenance.setdefault("kind", "curated_practice")
+        provenance["provenance_class"] = q["provenance_class"]
+        q["provenance"] = provenance
 
     def load_all(self):
         loaded = []
@@ -402,9 +453,17 @@ class RoleAwareTaxonomyManager:
                 with open(self.legacy_bank_path, "r", encoding="utf-8") as f:
                     legacy_data = json.load(f)
                 if isinstance(legacy_data, list):
+                    curated_texts = [q.get("question", "") for q in loaded if q.get("question")]
+                    dropped = 0
                     for item in legacy_data:
                         legacy_id = str(item.get("id", "")).strip()
                         if not legacy_id or legacy_id in self._by_id:
+                            continue
+                        legacy_question = str(item.get("question", "")).strip()
+                        if is_semantic_duplicate(legacy_question, curated_texts):
+                            # Curated wording wins; keeping both would show the same
+                            # question twice under different ids.
+                            dropped += 1
                             continue
                         legacy_category = str(item.get("category", "General"))
                         key = LEGACY_CATEGORY_KEYS.get(legacy_category, category_key(legacy_category))
@@ -434,8 +493,19 @@ class RoleAwareTaxonomyManager:
                             },
                             "version": "2026.1"
                         }
+                        # Legacy items were written for this app and have no source
+                        # URLs, so they must never be presented as sourced material.
+                        converted["provenance"] = {
+                            "kind": "generated_practice",
+                            "note": "Practice question written for this app — not a verbatim company interview question."
+                        }
+                        self._normalize_provenance(converted)
                         self._by_id[legacy_id] = converted
                         loaded.append(converted)
+                    if dropped:
+                        logger.info(
+                            f"Dropped {dropped} legacy question(s) that paraphrased a curated question."
+                        )
             except Exception as e:
                 logger.warning(f"Failed to load legacy question bank: {e}")
 
@@ -463,19 +533,7 @@ class RoleAwareTaxonomyManager:
 
     @staticmethod
     def _difficulty_distance(q_difficulty: str, target_difficulty: str) -> int:
-        order = ["easy", "easy-medium", "medium", "medium-hard", "hard"]
-        def rank(value: str) -> int:
-            v = (value or "medium").lower().strip()
-            if "easy" in v and ("medium" in v or "med" in v):
-                return 1
-            if "easy" in v:
-                return 0
-            if "hard" in v and "medium" in v:
-                return 3
-            if "hard" in v:
-                return 4
-            return 2
-        return abs(rank(q_difficulty) - rank(target_difficulty))
+        return abs(_difficulty_rank(q_difficulty) - _difficulty_rank(target_difficulty))
 
     def get_curated_question(
         self,
@@ -487,6 +545,7 @@ class RoleAwareTaxonomyManager:
         exclude_texts: Optional[List[str]] = None,
         seed: str = "",
         session_asked_concepts: Optional[List[str]] = None,
+        asked_history: Optional[List[str]] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Deterministic, blueprint-driven selection.
@@ -495,6 +554,10 @@ class RoleAwareTaxonomyManager:
         same first choice, so sessions are reproducible and testable. Rotation
         across sessions comes from the caller-supplied stable seed (session id),
         not from a random number generator.
+
+        `asked_history` is ordered least-recently-asked first, so once every
+        question has been seen the candidate cycles through old material instead
+        of being asked the same question twice in a row.
         """
         if not self.questions:
             return None
@@ -504,6 +567,11 @@ class RoleAwareTaxonomyManager:
         target_role = normalize_role_slug(role)
         key = category_key(category)
         asked_concepts = [str(c).lower() for c in (session_asked_concepts or []) if str(c).strip()]
+        asked_rank = {str(qid): idx for idx, qid in enumerate(asked_history or [])}
+
+        def recency(q: Dict[str, Any]) -> int:
+            # -1 sorts first: a never-asked question always beats a repeat.
+            return asked_rank.get(str(q.get("id", "")), -1)
 
         def eligible(q: Dict[str, Any]) -> bool:
             if q.get("id") in exclude:
@@ -531,6 +599,7 @@ class RoleAwareTaxonomyManager:
             lambda q: by_role(q),
         ]
 
+        exhausted = False
         chosen_pool: List[Dict[str, Any]] = []
         for predicate in tiers:
             pool = [q for q in self.questions if eligible(q) and predicate(q)]
@@ -538,10 +607,15 @@ class RoleAwareTaxonomyManager:
                 chosen_pool = pool
                 break
         if not chosen_pool:
+            # This topic is used up. Fill from other topics rather than asking a
+            # repeat; the caller tells the candidate why the topic changed.
+            chosen_pool = [q for q in self.questions if eligible(q) and not by_category(q)]
+        if not chosen_pool:
             chosen_pool = [q for q in self.questions if eligible(q)]
         if not chosen_pool:
-            # Every question was used in this session; recycling is explicit and
-            # still avoids repeating the immediately previous wording.
+            # Every question has been asked at least once; recycle the one that
+            # was asked longest ago instead of looping in id order.
+            exhausted = True
             chosen_pool = list(self.questions)
             if not chosen_pool:
                 return None
@@ -552,18 +626,22 @@ class RoleAwareTaxonomyManager:
             q_concepts = " ".join(str(c).lower() for c in (q.get("concepts") or []))
             return sum(1 for c in asked_concepts if c and c in q_concepts)
 
-        ranked = sorted(
-            chosen_pool,
-            key=lambda q: (
+        def sort_key(q: Dict[str, Any]):
+            if exhausted:
+                return (concept_penalty(q), recency(q), str(q.get("id", "")))
+            return (
                 concept_penalty(q),
                 self._difficulty_distance(str(q.get("difficulty", "Medium")), difficulty),
+                recency(q),
                 str(q.get("id", "")),
             )
-        )
 
-        # Stable rotation across sessions without randomness.
+        ranked = sorted(chosen_pool, key=sort_key)
+
+        # Stable rotation across sessions without randomness. Recycling must not
+        # rotate away from the least-recently-asked question.
         rotation = 0
-        if seed:
+        if seed and not exhausted:
             rotation = sum(ord(ch) for ch in f"{seed}:{key}:{phase}:{target_role}") % len(ranked)
         return ranked[rotation]
 
@@ -814,7 +892,8 @@ def get_next_question_for_turn(
     exclude_question_ids: Optional[List[str]] = None,
     api_key: Optional[str] = None,
     target_company: Optional[str] = None,
-    verified_sources: Optional[List[Dict[str, Any]]] = None
+    verified_sources: Optional[List[Dict[str, Any]]] = None,
+    asked_history: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Produces the next structured question adhering to:
@@ -970,21 +1049,34 @@ def get_next_question_for_turn(
             logger.warning(f"Dynamic question generation fallback triggered: {e}")
 
     # 3. Fallback to Role-Aware Curated Taxonomy
+    total_turns = int(blueprint.get("target_questions", 5) or 5)
+    target_difficulty = ramp_difficulty(
+        blueprint.get("base_difficulty", "Medium"), turn_index, total_turns
+    )
     curated = taxonomy_mgr.get_curated_question(
         role=target_role,
         phase=target_phase,
         category=selected_cat,
-        difficulty=blueprint.get("base_difficulty", "Medium"),
+        difficulty=target_difficulty,
         exclude_ids=all_excluded_ids,
         exclude_texts=session_asked_texts,
         seed=session_seed,
-        session_asked_concepts=session_asked_concepts
+        session_asked_concepts=session_asked_concepts,
+        asked_history=asked_history,
     )
 
     if curated:
+        curated_key = curated.get("category_key") or selected_key
+        curated_cat = curated.get("category") or selected_cat
+        coverage_note = None
+        if curated_key != selected_key:
+            coverage_note = (
+                f"No unused {selected_cat} question is left, so this one comes from "
+                f"{curated_cat}. Your {selected_cat} coverage is already complete."
+            )
         rubric_dict = {
             "dimensions": ["technical_correctness", "reasoning_and_tradeoffs", "structure_and_clarity", "relevance_and_depth"],
-            "expected_concepts": curated.get("expected_concepts", [curated.get("primary_skill", selected_cat)]),
+            "expected_concepts": curated.get("expected_concepts", [curated.get("primary_skill", curated_cat)]),
             "reference_answer": curated.get("internal_expected_answer", curated.get("model_answer", "")),
             "difficulty": curated.get("difficulty", blueprint.get("base_difficulty", "Medium")),
             "rubric_1_to_5": curated.get("rubric_1_to_5", {
@@ -993,6 +1085,8 @@ def get_next_question_for_turn(
                 "score_5": "Rigorous mastery and boundary awareness"
             })
         }
+        if coverage_note:
+            rubric_dict["coverage_note"] = coverage_note
         curated_urls = [u for u in (curated.get("source_urls") or []) if isinstance(u, str)]
         provenance = curated.get("provenance")
         if not isinstance(provenance, dict):
@@ -1002,16 +1096,16 @@ def get_next_question_for_turn(
             }
         return {
             "question_id": curated["id"],
-            "short_title": curated.get("short_title", selected_cat),
+            "short_title": curated.get("short_title", curated_cat),
             "question": curated["question"],
-            "category": selected_cat,
-            "category_key": selected_key,
+            "category": curated_cat,
+            "category_key": curated_key,
             "is_follow_up": False,
             "question_type": curated.get("question_type", "problem-solving"),
             "estimated_duration_minutes": curated.get("estimated_duration_minutes", 4),
             "source_basis": curated.get("source_basis", "curated_taxonomy"),
             "source_urls": curated.get("source_urls", []),
-            "sources": resolve_sources(curated_urls) or sources_for_category(selected_key),
+            "sources": resolve_sources(curated_urls) or sources_for_category(curated_key),
             "provenance": provenance,
             "rubric": rubric_dict
         }
@@ -1139,6 +1233,12 @@ def enrich_turn_metadata(turn: Dict[str, Any]) -> Dict[str, Any]:
         enriched["sources"] = sources
     if provenance:
         enriched["provenance"] = provenance
+
+    # Realistic mode strips the rubric before it reaches the candidate, so any
+    # note about topic coverage has to survive at the top level.
+    rubric = enriched.get("rubric")
+    if isinstance(rubric, dict) and rubric.get("coverage_note"):
+        enriched["coverage_note"] = str(rubric["coverage_note"])
     return enriched
 
 

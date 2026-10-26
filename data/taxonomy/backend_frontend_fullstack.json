@@ -31,7 +31,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "backend_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Authentication verifies identity ('who you are'); authorization verifies permissions ('what you are allowed to do'). To revoke stateless JWTs: use short-lived access tokens (e.g. 15 minutes) paired with refresh tokens stored in DB/Redis. For immediate emergency revocation of access tokens, maintain an in-memory or Redis token blacklist / user revoked_at timestamp checked during validation.",
     "rubric_1_to_5": {
@@ -77,7 +78,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "backend_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Dirty read: reading uncommitted changes. Non-repeatable read: re-reading the same row within a transaction returns altered data. Phantom read: re-executing a range query returns newly inserted rows. Read Committed prevents dirty reads using row locks or snapshot read. Repeatable Read prevents dirty and non-repeatable reads (via MVCC or shared locks).",
     "rubric_1_to_5": {
@@ -123,7 +125,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "frontend_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Solution 1: Use AbortController and abort the in-flight fetch request on the next keystroke/effect cleanup. Solution 2: Track an incrementing request ID or timestamp and discard responses where request_id !== current_request_id. Combine with input debouncing to reduce redundant network load.",
     "rubric_1_to_5": {
@@ -169,7 +172,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "frontend_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "LCP culprits: slow server response time, render-blocking JS/CSS, slow resource load times (large uncompressed images), client-side rendering delays. Fixes: CDN caching, preload critical hero images, modern image formats (AVIF/WebP), responsive srcset, critical CSS inlining. CLS culprits: images/ads without explicit dimensions, dynamic content insertion, FOIT/FOUT. Fixes: explicit width/height or aspect-ratio, reservation of banner containers, font-display: optional/swap.",
     "rubric_1_to_5": {
@@ -215,7 +219,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "full_stack_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Frontend: button onClick dispatches state update optimistically (count + 1, active icon). Triggers POST /api/posts/:id/like with auth bearer token. Network: DNS lookup, TLS handshake, reverse proxy (Nginx) terminates TLS and routes to backend. Backend: middleware parses JWT, validates user identity, checks rate limits. Database: executes atomic INSERT INTO post_likes (user_id, post_id) with unique constraint. If fails (network drop or 500), frontend catches error, rolls back state, and shows a toast.",
     "rubric_1_to_5": {

@@ -37,7 +37,8 @@ from app.services.web_interview_service import (
     evaluate_turn_response,
     generate_interview_debrief,
     sanitize_turn_for_client,
-    category_key
+    category_key,
+    taxonomy_mgr
 )
 
 logger = logging.getLogger(__name__)
@@ -531,8 +532,9 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             blueprint=blueprint
         )
 
-        # Fetch previously asked questions across all candidate interviews to prevent repeats
-        past_q_ids = await db.get_candidate_past_asked_question_ids(user["id"])
+        # Fetch previously asked questions across all candidate interviews to prevent repeats.
+        # History is ordered oldest-first so an exhausted pool recycles the longest-rested question.
+        past_q_ids = await db.get_candidate_asked_history(user["id"])
 
         # Generate and save Turn 0 Question
         turn_0_q = get_next_question_for_turn(
@@ -543,7 +545,8 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             confirmed_profile=confirmed_profile,
             exclude_question_ids=past_q_ids,
             api_key=groq_key,
-            target_company=user.get("target_company")
+            target_company=user.get("target_company"),
+            asked_history=past_q_ids
         )
         turn_id = f"turn_{uuid.uuid4().hex[:12]}"
         await db.create_web_interview_turn(
@@ -565,6 +568,43 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         return {
             "session": session,
             "current_turn": current_turn
+        }
+
+    @router.get("/questions/topics")
+    async def list_question_topics(user: Dict[str, Any] = Depends(get_current_user)):
+        """
+        Question-bank coverage per topic, so the setup page can show what is
+        actually available instead of inventing counts client-side.
+        """
+        enforce_onboarding_completed(user)
+        topics: Dict[str, Dict[str, Any]] = {}
+        for q in taxonomy_mgr.questions:
+            key = q.get("category_key") or category_key(str(q.get("category", "")))
+            entry = topics.setdefault(key, {
+                "key": key,
+                "label": q.get("category") or key,
+                "total": 0,
+                "difficulty": {},
+                "provenance": {"source_listed": 0, "ai_generated": 0},
+            })
+            # Curated items store the canonical key as their category, so prefer
+            # any human-readable label the legacy bank provides for the same topic.
+            label = str(q.get("category") or "")
+            if label and label != key:
+                entry["label"] = label
+            entry["total"] += 1
+            difficulty = str(q.get("difficulty") or "Medium")
+            entry["difficulty"][difficulty] = entry["difficulty"].get(difficulty, 0) + 1
+            provenance_class = str(q.get("provenance_class") or "ai_generated")
+            if provenance_class not in entry["provenance"]:
+                provenance_class = "ai_generated"
+            entry["provenance"][provenance_class] += 1
+        for entry in topics.values():
+            if entry["label"] == entry["key"]:
+                entry["label"] = entry["key"].replace("_", " ").title()
+        return {
+            "topics": sorted(topics.values(), key=lambda t: (-t["total"], t["key"])),
+            "total": sum(t["total"] for t in topics.values()),
         }
 
     @router.get("/interview/session/active")
@@ -827,7 +867,7 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         is_completed = len(all_turns) >= target_questions
 
         if not is_completed:
-            past_q_ids = await db.get_candidate_past_asked_question_ids(user["id"])
+            past_q_ids = await db.get_candidate_asked_history(user["id"])
             # Generate next question adhering to question deduplication and adaptive follow-up
             next_q = get_next_question_for_turn(
                 qb=qb,
@@ -837,7 +877,8 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
                 confirmed_profile=confirmed_profile,
                 exclude_question_ids=past_q_ids,
                 api_key=groq_key,
-                target_company=user.get("target_company")
+                target_company=user.get("target_company"),
+                asked_history=past_q_ids
             )
             next_turn_id = f"turn_{uuid.uuid4().hex[:12]}"
             await db.create_web_interview_turn(

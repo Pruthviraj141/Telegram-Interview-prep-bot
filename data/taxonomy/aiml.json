@@ -30,7 +30,8 @@
       "kind": "curated_practice",
       "basis": "public_interview_guidance",
       "family": "ai_ml",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Data leakage occurs when information from outside the training dataset (such as future timestamps or target labels) leaks into model training. Preprocessing example: fitting StandardScaler on the full dataset rather than only training folds. Diagnosis: 1) Verify preprocessing pipelines (e.g. Scikit-learn Pipeline) fit only on train split. 2) Compare feature distributions between train and production using statistical tests (KS-test, PSI). 3) Check for target leakage or target-correlated features created after event occurrence.",
     "rubric_1_to_5": {
@@ -77,7 +78,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Accuracy is misleading because predicting all negatives achieves 99.9% accuracy. ROC-AUC plots True Positive Rate vs False Positive Rate; when True Negatives are overwhelmingly large, FPR stays tiny even with thousands of False Positives. PR-AUC focuses on minority class (True Positives relative to False Positives). Threshold tuning: construct a cost matrix where cost = (Cost_FN * FN) + (Cost_FP * FP), and pick threshold minimizing total cost.",
     "rubric_1_to_5": {
@@ -124,7 +126,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Causes: Sigmoid/Tanh saturating activations in deep stacks (derivative <= 0.25 multiplying through chain rule), improper weight initialization (e.g. too small variance), lack of normalization layers. PyTorch inspection: iterate through model.named_parameters() after loss.backward() and inspect param.grad.abs().mean() per layer, or log to TensorBoard/WandB. Solutions: switch to ReLU/GELU, He (Kaiming) or Xavier initialization, add LayerNorm / BatchNorm, and introduce residual/skip connections (ResNet).",
     "rubric_1_to_5": {
@@ -172,7 +175,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Isolate by decomposing into two distinct evaluation stages (e.g. Ragas / TruLens framework): 1) Retrieval Evaluation: Context Relevance, Hit Rate @ K, MRR (Mean Reciprocal Rank). Inspect chunk size, overlap, embedding model, and hybrid search (BM25 + Dense vector search + Cross-Encoder reranker). 2) Generation Evaluation: Faithfulness (Groundedness) — does the answer contain only facts supported by context? and Answer Relevance — does it directly address the user's query? If context lacks the answer, it's a retrieval failure; if context has the answer but LLM hallucinates, it's a prompt/context window/generator failure.",
     "rubric_1_to_5": {
@@ -221,7 +225,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Planning architecture: Plan-and-Solve splits initial decomposition from iterative execution, while ReAct couples Thought-Action-Observation step-by-step for dynamic discovery. Preventing infinite loops: 1) Hard step budget (max_iterations, e.g. 8). 2) Action signature hashing / cycle detection — if identical tool name and arguments repeat with identical error, abort to human-in-the-loop fallback. Preventing duplicate destructive side-effects: require idempotency keys on all write operations, separate read-only exploration tools from write tools, and implement a dry-run / confirmation boundary before mutation.",
     "rubric_1_to_5": {
@@ -269,7 +274,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "StateGraph structure: Nodes represent compute functions or LLM calls; Edges represent conditional routing transitions. State schema uses reducer annotations (e.g. Annotated[list, operator.add] for message history). Checkpointing: using a Checkpointer (e.g. PostgresSaver, SqliteSaver) keyed on thread_id. Human-in-the-Loop: use interrupt_before or interrupt_after on the approval node. LangGraph pauses execution, saves snapshot state to DB, and returns control to client. Once user approves, the application calls graph.invoke(None, config={'configurable': {'thread_id': '...'}}), which rehydrates the state and continues downstream edges seamlessly.",
     "rubric_1_to_5": {
@@ -318,7 +324,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Why naive fails: cuts table rows in half destroying markdown schema; splits code functions across boundary losing variable scope; dilutes embeddings with fragmented context. Advanced solutions: 1) Structure-aware/Markdown parsing preserving tables as single semantic units or converted to key-value representations. 2) Parent-Document Retrieval: index small 200-token chunks for accurate vector embedding matching, but retrieve the larger parent section (1500 tokens) to pass into the LLM context. 3) Two-stage retrieval: broad recall via hybrid search (BM25 + Dense vector HNSW), followed by a Cross-Encoder reranker (e.g. Cohere Rerank / BGE-Reranker) that scores (query, chunk) jointly to filter irrelevant items.",
     "rubric_1_to_5": {
@@ -366,7 +373,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Evaluation framework: 1) Golden Dataset: curated representative queries covering typical requests, edge cases, adversarial inputs, and negative queries where model should decline to answer. 2) Metrics: deterministic (regex, JSON schema adherence, exact match) alongside model-graded metrics (groundedness, relevance, toxicity). 3) Mitigating LLM-as-a-judge bias: swap candidate order to eliminate position bias (pairwise evaluation), enforce strict length penalties or normalized rubrics to counter verbosity bias, and provide few-shot anchored reference examples. 4) CI/CD integration: run lightweight evals on pull requests, gating merges on pass rates and latency/cost thresholds.",
     "rubric_1_to_5": {
@@ -415,7 +423,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "TTFT measures prefill latency (processing the input prompt to generate token 1); TPOT measures decode latency (generating subsequent tokens autoregressively). 4-second TTFT on 15k tokens is dominated by prefill computation. Solutions: 1) Provider prompt caching (e.g. Anthropic/Groq prompt caching where static system instructions and few-shot examples are cached, cutting TTFT by up to 80% and cost by 90%). Ensure static prefixes precede dynamic variables. 2) Chunking / context minimization: retrieve only top-K relevant passages rather than 15k bulk text. 3) Semantic caching: cache identical user queries using vector similarity. 4) Speculative decoding optimizes decode TPOT, not prefill TTFT.",
     "rubric_1_to_5": {
@@ -464,7 +473,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "ai_ml_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Issue 1 (Tool Loops): Implement deterministic loop detection using a sliding window of recent tool calls. Track (tool_name, hash(arguments)). If the same tool executes >3 times with identical or zero-result output, break loop and inject an explicit observation message informing the agent that repeated attempts failed, or escalate to human agent. Set global step limits (max_iterations). Issue 2 (Hallucinated parameters): 1) Enforce strict structured outputs / function definitions using JSON Schema / Pydantic models with additionalProperties: false. 2) Wrap tool execution in an input validation layer (e.g. Instructor / Pydantic); if validation fails, return the Pydantic ValidationError text back to the LLM as the tool result so it self-corrects the schema rather than crashing. 3) Ensure tool descriptions provide explicit type hints and concise examples.",
     "rubric_1_to_5": {

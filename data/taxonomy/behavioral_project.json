@@ -32,7 +32,8 @@
       "kind": "curated_practice",
       "basis": "public_interview_guidance",
       "family": "behavioral",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Candidate uses STAR (Situation, Task, Action, Result). Focuses on their personal ownership ('I did' rather than passive 'we did'). Clear articulation of the technical roadblock, realistic triage trade-off (e.g. cutting scope vs shipping hotfix vs communicating early), measurable outcome, and mature reflection on how they adjusted their testing, estimation, or communication going forward.",
     "rubric_1_to_5": {
@@ -78,7 +79,8 @@
       "kind": "curated_practice",
       "basis": "public_interview_guidance",
       "family": "behavioral",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Uses STAR method. Objective framing of the dispute using evidence (benchmarks, latency, maintainability, team familiarity) rather than emotional argumentation. Listening actively to the opposing viewpoint. Shows ability to reach a compromise, run a proof of concept (POC), or 'disagree and commit' to keep momentum.",
     "rubric_1_to_5": {
@@ -125,7 +127,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "all_technical_roles",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Candidate discusses their actual project: explains component interaction, articulates a concrete trade-off (e.g. Postgres vs MongoDB, REST vs WebSockets, synchronous vs message queue), justifies the decision based on actual requirements, identifies where the system would fail first under 10x traffic, and discusses measurements/profiling.",
     "rubric_1_to_5": {

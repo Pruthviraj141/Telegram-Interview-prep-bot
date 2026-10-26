@@ -32,7 +32,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "devops_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Blue-Green runs two identical production environments; router switches 100% traffic instantly. Fast rollback (switch router back), but doubles idle infrastructure cost. Canary gradually routes a small percentage (e.g. 5% -> 25% -> 100%) to new version while monitoring error rates/latency. Cost-effective and catches issues with real traffic, but takes longer to verify. Both require backward-compatible database schema migrations (Expand-Contract pattern).",
     "rubric_1_to_5": {
@@ -78,7 +79,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "qa_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "Pyramid: wide base of fast, deterministic Unit tests; middle layer of Integration tests; small top layer of E2E tests. Over-relying on E2E causes slow pipelines, high maintenance cost, fragile tests, and slow feedback loops. Flaky test strategy: 1) Quarantine flaky tests out of merge-blocking CI into a separate non-blocking monitor job. 2) Investigate root causes (arbitrary sleeps vs explicit waits/locators, test state leakage, network race conditions, shared test accounts). 3) Enforce test isolation with clean fixtures/mocking.",
     "rubric_1_to_5": {
@@ -125,7 +127,8 @@
       "kind": "curated_practice",
       "basis": "industry_standard",
       "family": "cybersecurity_engineer",
-      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company."
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
     },
     "internal_expected_answer": "SQL injection alters query syntax because input is concatenated directly into SQL command stream. Parameterization (prepared statements) separates SQL command parsing from data values; parameters are transmitted in a separate binary protocol step and treated purely as literals. BOLA (Broken Object Level Auth) occurs when an endpoint accepts an object ID without verifying that the authenticated user owns or has permission for that object. Fix: Query database with tenant/user scoping: 'SELECT * FROM documents WHERE id = :id AND user_id = :current_user_id', or enforce policy checks in authorization middleware.",
     "rubric_1_to_5": {
