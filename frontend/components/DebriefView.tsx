@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Lightbulb,
   BookOpen,
+  Target,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonClasses } from "@/components/ui/button";
@@ -43,6 +44,99 @@ const SKILL_LABELS: Record<string, string> = {
   communication_delivery: "Spoken Delivery",
 };
 
+interface FixFirstItem {
+  text: string;
+  why: string;
+  question: string;
+  score: number | null;
+}
+
+// "Fix first" is derived only from what the evaluator actually reported: real
+// missing details and misconceptions, ordered by the worst-scoring answers.
+// Nothing here is invented when the evidence is absent.
+function buildFixFirst(
+  turns: InterviewTurn[],
+  skills: Record<string, unknown>,
+): { weakestLabel: string | null; items: FixFirstItem[] } {
+  const scored = turns
+    .filter((t) => t.evaluation && typeof t.evaluation === "object")
+    .map((t) => ({ turn: t, score: Number(t.evaluation?.overall_score) }))
+    .sort((a, b) => {
+      const av = Number.isFinite(a.score) ? a.score : 99;
+      const bv = Number.isFinite(b.score) ? b.score : 99;
+      return av - bv;
+    });
+
+  const seen = new Set<string>();
+  const items: FixFirstItem[] = [];
+
+  // Near-identical gaps show up across turns ("Root cause of delay" vs "the
+  // delay"), so compare on a normalized form rather than exact strings.
+  const dedupeKey = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\b(the|a|an)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const add = (raw: unknown, why: unknown, turn: InterviewTurn, score: number | null) => {
+    const text = typeof raw === "string" ? raw.trim() : "";
+    if (!text) return;
+    const key = dedupeKey(text);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    items.push({
+      text,
+      why:
+        typeof why === "string" && why.trim()
+          ? why.trim()
+          : "This is the gap the evaluator flagged on that answer.",
+      question: turn.question_text,
+      score: Number.isFinite(score) ? score : null,
+    });
+  };
+
+  for (const { turn, score } of scored) {
+    if (items.length >= 3) break;
+    const evaluation = turn.evaluation || {};
+    for (const misconception of evaluation.misconceptions || []) {
+      if (items.length >= 3) break;
+      add(
+        misconception,
+        "A factual error an interviewer would notice.",
+        turn,
+        score,
+      );
+    }
+    for (const detail of evaluation.missing_details_and_why || []) {
+      if (items.length >= 3) break;
+      if (detail && typeof detail === "object") {
+        add(detail.detail, detail.why_it_matters, turn, score);
+      } else {
+        add(detail, null, turn, score);
+      }
+    }
+  }
+
+  let weakestKey: string | null = null;
+  let weakestScore = Infinity;
+  for (const [key, value] of Object.entries(skills || {})) {
+    const numeric = Number(value);
+    if (value === null || value === undefined || !Number.isFinite(numeric)) continue;
+    if (numeric < weakestScore) {
+      weakestScore = numeric;
+      weakestKey = key;
+    }
+  }
+
+  return {
+    weakestLabel: weakestKey ? SKILL_LABELS[weakestKey] || weakestKey : null,
+    items,
+  };
+}
+
+
 export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrief }) => {
   const [activeTurnIdx, setActiveTurnIdx] = useState<number | null>(0);
   const [disputeTurnId, setDisputeTurnId] = useState<string | null>(null);
@@ -55,6 +149,7 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
 
   const skills = debrief?.skill_breakdown || {};
   const nextSteps = debrief?.next_steps || [];
+  const fixFirst = debrief ? buildFixFirst(turns, skills) : { weakestLabel: null, items: [] };
 
   // A round ended with zero answers has no debrief. Say what happened and point
   // at the next action instead of rendering a blank report.
@@ -191,6 +286,54 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
           </p>
         )}
       </Card>
+
+      {/* Fix first: the highest-leverage gaps, straight from the evaluations */}
+      {fixFirst.items.length > 0 && (
+        <Card className="space-y-4 border-warning/30 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <Target aria-hidden="true" className="h-4 w-4 text-warning-ink" />
+              <span>Fix first</span>
+            </div>
+            {fixFirst.weakestLabel && (
+              <Badge variant="warning">Weakest: {fixFirst.weakestLabel}</Badge>
+            )}
+          </div>
+          <p className="text-[11px] leading-relaxed text-ink-secondary">
+            These come from your lowest-scoring answers. Work through them in
+            order before the next round.
+          </p>
+          <ol className="space-y-2.5">
+            {fixFirst.items.map((item, idx) => (
+              <li
+                key={`${idx}-${item.text.slice(0, 24)}`}
+                className="flex items-start gap-3 rounded-lg border border-line bg-surface-sunken p-3"
+              >
+                <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-[10px] font-bold text-ink">
+                  {idx + 1}
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-medium leading-relaxed text-ink">
+                    {item.text}
+                  </p>
+                  <p className="text-[11px] leading-relaxed text-ink-secondary">
+                    {item.why}
+                  </p>
+                  <p className="truncate text-[10px] text-ink-tertiary">
+                    From: {item.question}
+                    {item.score !== null && (
+                      <>
+                        <span aria-hidden="true"> · </span>
+                        scored {item.score}/5
+                      </>
+                    )}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       {/* Multi-dimensional skill breakdown */}
       {Object.keys(skills).length > 0 && (

@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { InterviewStudio } from "@/components/InterviewStudio";
-import { api, ApiError, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  CandidateUser,
+  InterviewSession,
+  InterviewTurn,
+  QuestionTopic,
+} from "@/lib/api";
 import { speechSynth } from "@/lib/speech";
 import { cn, getErrorMessage } from "@/lib/utils";
 import {
@@ -20,6 +27,7 @@ import {
   AlertCircle,
   History,
   SlidersHorizontal,
+  Library,
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -94,6 +102,47 @@ const STYLES = [
   },
 ];
 
+// Canonical bank topics each focus track draws from directly. Mirrors the
+// backend blueprint mapping so a count is a fact about the bank, not a guess.
+// Tracks without an entry blend the whole bank through the role fallback.
+const TRACK_TOPIC_KEYS: Record<string, string[]> = {
+  aiml: [
+    "ml_foundations",
+    "ml_metrics",
+    "rag",
+    "agentic_ai",
+    "langgraph",
+    "llm_eval_latency",
+  ],
+  dsa: [
+    "dsa_general",
+    "dsa_hashing",
+    "dsa_two_pointers",
+    "dsa_trees_graphs_dp",
+    "dsa_complexity",
+  ],
+  system_design: [
+    "system_design_architecture",
+    "api_contracts_idempotency",
+    "db_indexing_query_plans",
+    "distributed_caching",
+    "scalability_resiliency",
+  ],
+  project_defence: [
+    "project_architecture",
+    "project_bottleneck",
+    "project_tradeoffs",
+    "project_failure",
+  ],
+  hr: [
+    "behavioral_intro",
+    "behavioral_failure",
+    "behavioral_collaboration",
+    "behavioral_prioritization",
+  ],
+  resume: [],
+};
+
 const LAST_CONFIG_KEY = "ai_coach_last_setup";
 
 interface SetupConfig {
@@ -145,6 +194,30 @@ function InterviewContent() {
   // silently forking a second session. Only the id is required to resume, so
   // the 409 path can recover without a second round-trip.
   const [resumable, setResumable] = useState<{ id: string; label: string | null } | null>(null);
+  // Live bank coverage. A failed lookup only costs the coverage copy; the
+  // setup form stays usable, and the UI says so instead of inventing numbers.
+  const [topics, setTopics] = useState<QuestionTopic[]>([]);
+  const [topicsLoaded, setTopicsLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTopics() {
+      try {
+        const res = await api.getQuestionTopics();
+        if (cancelled) return;
+        setTopics(res.topics || []);
+      } catch {
+        if (cancelled) return;
+        setTopics([]);
+      } finally {
+        if (!cancelled) setTopicsLoaded(true);
+      }
+    }
+    loadTopics();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -261,6 +334,36 @@ function InterviewContent() {
   const modeLabel =
     mode === "practice" ? "Interactive coaching" : "Realistic simulation";
   const resumeBlocked = interviewerStyle === "resume" && !hasConfirmedProfile;
+
+  const totalQuestions = topics.reduce((sum, t) => sum + t.total, 0);
+  const sortedTopics = [...topics].sort(
+    (a, b) => b.total - a.total || a.label.localeCompare(b.label)
+  );
+
+  // Counts are facts about the loaded bank: only the canonical topics a track
+  // draws from directly are summed. Tracks without a mapping blend the whole
+  // bank through the backend's role fallback, so they get no invented count.
+  const coverageFor = (styleId: string): string => {
+    if (!topicsLoaded) return "Checking bank coverage…";
+    if (!topics.length) return "Coverage unavailable";
+    if (styleId === "resume") return "Built from your resume";
+    const keys = TRACK_TOPIC_KEYS[styleId];
+    if (!keys) return "Blended across all topics";
+    let direct = 0;
+    let covered = 0;
+    for (const key of keys) {
+      const topic = topics.find((t) => t.key === key);
+      if (!topic) continue;
+      direct += topic.total;
+      if (topic.total > 0) covered += 1;
+    }
+    if (direct === 0) return "Fills from other topics";
+    const noun = direct === 1 ? "question" : "questions";
+    if (direct < 3) return `${direct} ${noun} · fills from other topics`;
+    return `${direct} ${noun} across ${covered} ${
+      covered === 1 ? "topic" : "topics"
+    }`;
+  };
 
   const applyConfig = (config: SetupConfig) => {
     setMode(config.mode);
@@ -454,6 +557,49 @@ function InterviewContent() {
           </div>
         )}
 
+        {topicsLoaded && topics.length > 0 && (
+          <Card className="p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <Library
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-ink-secondary"
+              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <p className="text-sm font-semibold text-ink">Question bank</p>
+                  <p className="text-xs text-ink-secondary">
+                    {totalQuestions} questions · {topics.length} topics
+                  </p>
+                </div>
+                <p className="text-xs leading-relaxed text-ink-secondary">
+                  Rounds draw from this bank and do not repeat a question until
+                  the pool is exhausted.
+                </p>
+                <details className="rounded-lg border border-line bg-surface-sunken">
+                  <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                    See coverage by topic
+                  </summary>
+                  <ul className="max-h-64 space-y-1 overflow-y-auto border-t border-line px-3 py-2 text-[11px]">
+                    {sortedTopics.map((topic) => (
+                      <li
+                        key={topic.key}
+                        className="flex items-baseline justify-between gap-3"
+                      >
+                        <span className="truncate text-ink-secondary">
+                          {topic.label}
+                        </span>
+                        <span className="shrink-0 font-medium text-ink">
+                          {topic.total}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 gap-5 pb-24 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start lg:gap-6 lg:pb-0">
           <Card className="space-y-7 p-5 sm:p-8">
             {/* Presets + last used */}
@@ -606,6 +752,9 @@ function InterviewContent() {
                       </div>
                       <p className="mt-1 text-[11px] leading-relaxed text-ink-secondary">
                         {style.desc}
+                      </p>
+                      <p className="mt-1.5 text-[10px] font-medium text-ink-tertiary">
+                        {coverageFor(style.id)}
                       </p>
                     </div>
                   </button>
@@ -765,6 +914,22 @@ function InterviewContent() {
                   </dd>
                 </div>
               </dl>
+
+              <div className="space-y-1 border-t border-line pt-3">
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <span className="text-ink-secondary">Bank</span>
+                  <span className="font-medium text-ink">
+                    {topics.length
+                      ? `${totalQuestions} questions`
+                      : topicsLoaded
+                      ? "Coverage unavailable"
+                      : "Checking…"}
+                  </span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-ink-secondary">
+                  {coverageFor(interviewerStyle)}
+                </p>
+              </div>
 
               {resumeBlocked && (
                 <p

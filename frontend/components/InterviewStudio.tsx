@@ -581,7 +581,12 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     currentTurn.rubric?.rubric_1_to_5?.score_3 || currentTurn.rubric?.score_3;
 
   const hasSources = (currentTurn.sources?.length || 0) > 0;
-  const showProvenance = Boolean(currentTurn.provenance?.note || currentTurn.source_basis || hasSources);
+  const showProvenance = Boolean(
+    currentTurn.provenance?.note ||
+      currentTurn.source_basis ||
+      currentTurn.coverage_note ||
+      hasSources,
+  );
 
   const scoreDisplay =
     typeof turnEvaluation?.overall_score === "number"
@@ -863,6 +868,11 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                 {currentTurn.source_basis && (
                   <p className="text-[10px] text-ink-tertiary">
                     Basis: {SOURCE_BASIS_LABELS[currentTurn.source_basis] || currentTurn.source_basis}
+                  </p>
+                )}
+                {currentTurn.coverage_note && (
+                  <p className="text-[10px] text-ink-tertiary">
+                    Topic: {currentTurn.coverage_note}
                   </p>
                 )}
                 {hasSources && (

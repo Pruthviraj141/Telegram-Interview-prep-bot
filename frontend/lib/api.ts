@@ -139,6 +139,17 @@ export interface InterviewTurn {
   source_basis?: string;
   sources?: InterviewSource[];
   provenance?: { kind?: string; note?: string; [key: string]: any };
+  // Set when the question was served from a different topic than the one the
+  // round asked for, because the requested topic had no unused questions left.
+  coverage_note?: string;
+}
+
+export interface QuestionTopic {
+  key: string;
+  label: string;
+  total: number;
+  difficulty: Record<string, number>;
+  provenance: { source_listed: number; ai_generated: number };
 }
 
 // Get or set local user token/ID
@@ -287,6 +298,11 @@ export const api = {
     fetchApi<{ session: InterviewSession; turns: InterviewTurn[] }>(`/interview/session/${sessionId}`),
 
   listInterviewSessions: () => fetchApi<InterviewSession[]>("/interview/sessions"),
+
+  // Real question-bank coverage per topic. The setup page shows what is
+  // actually loaded instead of inventing counts client-side.
+  getQuestionTopics: () =>
+    fetchApi<{ topics: QuestionTopic[]; total: number }>("/questions/topics"),
 
   transcribeAudio: async (audioBlob: Blob) => {
     const formData = new FormData();
