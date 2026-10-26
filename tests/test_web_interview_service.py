@@ -140,6 +140,25 @@ def test_technical_round_never_asks_ai_questions():
         assert key in technical_keys, f"Technical round leaked '{key}'"
 
 
+def test_project_defence_round_only_asks_project_questions():
+    """Project defence must not widen to the full bank and ask DSA/AI questions."""
+    bp, turns = _run_round("project_defence", turns=10)
+    project_keys = {
+        "project_architecture",
+        "project_bottleneck",
+        "project_tradeoffs",
+        "project_failure",
+    }
+    assert set(bp["category_keys"]) <= project_keys
+
+    for turn in turns:
+        key = turn["category_key"] or ""
+        assert key in project_keys, f"Project round leaked '{key}'"
+
+    # Every project topic must have authored depth, not one item recycled.
+    assert len({t["category_key"] for t in turns}) >= 3
+
+
 def test_mixed_round_spans_multiple_topics():
     bp, turns = _run_round("mixed", turns=10)
     keys = {t["category_key"] for t in turns}

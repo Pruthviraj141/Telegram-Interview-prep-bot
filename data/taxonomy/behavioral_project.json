@@ -703,5 +703,581 @@
       "How do you tell the difference between a risk worth escalating and a preference?"
     ],
     "version": "2026.1"
+  },
+  {
+    "id": "proj_arch_001",
+    "short_title": "Component Boundaries & Data Ownership",
+    "question": "Take the project you know best and draw its components for me verbally — what each one owns, and how a request moves through them. Where is the boundary you are least sure about, and what would break if you moved it?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_architecture",
+    "primary_skill": "Component Boundaries",
+    "secondary_skills": [
+      "Data Ownership",
+      "Request Flow",
+      "Resume Defence"
+    ],
+    "concepts": [
+      "Component Boundaries",
+      "Data Ownership",
+      "Request Flow",
+      "Resume Defence",
+      "boundary",
+      "service split",
+      "data ownership"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate names concrete components, states which data each owns, and traces one real request end to end. Should admit at least one boundary they are unsure about and reason about the coupling cost of moving it (shared tables, chatty calls, duplicated validation) rather than claiming the design is flawless.",
+    "rubric_1_to_5": {
+      "score_1": "Recites feature names from the resume with no notion of components, ownership, or data flow.",
+      "score_3": "Describes the components and flow accurately but treats the boundaries as obvious and cannot reason about what moving one would cost.",
+      "score_5": "Traces a real request precisely, names the data owner for each piece of state, and reasons concretely about the coupling and migration cost of the boundary they are least sure about."
+    },
+    "follow_up_directions": [
+      "Which component would you split out first if the team doubled, and what would you have to change to make that split safe?",
+      "Where does the same data get written by more than one component, and how do you keep those copies consistent?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_arch_002",
+    "short_title": "Defending a Core Architectural Decision",
+    "question": "Pick the architectural decision in your project you would most defend in a design review — a datastore, sync versus async, or one service versus several. What requirement forced it, what did it cost you, and what evidence would make you reverse it?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_architecture",
+    "primary_skill": "Architectural Justification",
+    "secondary_skills": [
+      "Trade-off Analysis",
+      "Reversibility",
+      "Design Review"
+    ],
+    "concepts": [
+      "Architectural Justification",
+      "Trade-off Analysis",
+      "Reversibility",
+      "Design Review",
+      "architecture decision",
+      "design review",
+      "reversibility"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate ties the decision to a concrete requirement or constraint, not to preference. Explains the cost paid (operational overhead, latency, developer friction) and states a falsifiable condition that would justify reversing it. Strong answers distinguish reversible from one-way-door decisions.",
+    "rubric_1_to_5": {
+      "score_1": "Defends the choice with buzzwords or popularity ('everyone uses it') and cannot name the requirement behind it.",
+      "score_3": "Explains the decision and its benefit, but is vague about the cost paid or about what evidence would change their mind.",
+      "score_5": "Grounds the decision in a specific requirement, quantifies or names the cost, and gives a concrete, falsifiable reversal condition while distinguishing reversible from irreversible choices."
+    },
+    "follow_up_directions": [
+      "If that decision turned out to be wrong in six months, how expensive would it be to undo, and what would you do in the meantime?",
+      "Who else had to live with that decision, and how did you bring them along?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_arch_003",
+    "short_title": "Source of Truth Under Concurrent Writes",
+    "question": "In your project, which component owns the source of truth for your most important data, and how do the others stay consistent with it? Walk me through what happens when two writers touch that data at the same time.",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_architecture",
+    "primary_skill": "Consistency Design",
+    "secondary_skills": [
+      "Concurrency",
+      "Source of Truth",
+      "Data Integrity"
+    ],
+    "concepts": [
+      "Consistency Design",
+      "Concurrency",
+      "Source of Truth",
+      "Data Integrity",
+      "concurrency",
+      "source of truth",
+      "consistency"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate identifies one clear owner, describes the propagation path (transaction, event, cache invalidation), and reasons about the concurrent-write case: last write wins versus conflict detection, locking versus optimistic versioning, and what the user sees when they conflict. Honest answers may admit the project never handled this and explain what it would take.",
+    "rubric_1_to_5": {
+      "score_1": "Cannot say which store is authoritative, or claims consistency is automatic without explaining how.",
+      "score_3": "Names the owner and the propagation path but hand-waves the concurrent-write case or assumes conflicts never happen.",
+      "score_5": "Names the authoritative store, traces propagation, and reasons concretely about concurrent writes — the mechanism used or needed, the failure mode, and the user-visible consequence."
+    },
+    "follow_up_directions": [
+      "What does a user see if their write loses a conflict, and is that acceptable for this data?",
+      "Where could the cache and the database disagree, and how long can that window be?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_bottleneck_001",
+    "short_title": "Measuring the Slowest Path",
+    "question": "What is the slowest path in your project today, and how do you actually know? Give me the measurement — the metric, the number, and the tool that produced it.",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_bottleneck",
+    "primary_skill": "Performance Measurement",
+    "secondary_skills": [
+      "Profiling",
+      "Latency Budgets",
+      "Evidence Discipline"
+    ],
+    "concepts": [
+      "Performance Measurement",
+      "Profiling",
+      "Latency Budgets",
+      "Evidence Discipline",
+      "profiling",
+      "latency",
+      "measurement"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate names a specific path, cites a number and where it came from (profiler, query plan, load test, logs), and can distinguish end-to-end latency from the slow component inside it. Best answers say what they have not measured yet instead of inventing numbers.",
+    "rubric_1_to_5": {
+      "score_1": "Guesses at what is slow and cannot produce any measurement, or claims there is no slow path.",
+      "score_3": "Identifies a plausible slow path and a rough number, but the measurement is anecdotal or does not separate the component from the total.",
+      "score_5": "Cites a concrete metric from a named tool, separates end-to-end latency from the dominant component, and is explicit about what remains unmeasured."
+    },
+    "follow_up_directions": [
+      "What did you measure before and after your last optimization, and how much of the gain was real?",
+      "Which of those numbers would change most under a different data size, and why?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_bottleneck_002",
+    "short_title": "First Component to Saturate at 20x",
+    "question": "If traffic to your project grew twenty times tomorrow, which specific component saturates first, and why that one rather than the others? What would you change first, and what would you deliberately leave alone?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_bottleneck",
+    "primary_skill": "Scalability Reasoning",
+    "secondary_skills": [
+      "Capacity Planning",
+      "Prioritization",
+      "Failure Modes"
+    ],
+    "concepts": [
+      "Scalability Reasoning",
+      "Capacity Planning",
+      "Prioritization",
+      "Failure Modes",
+      "scalability",
+      "capacity",
+      "saturation"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate picks one component and justifies it with a mechanism — connection pool limits, single writer, CPU-bound serialization, N+1 queries, cold starts — rather than a generic 'the database'. Explains the cheapest effective change and justifies what not to touch yet, showing they optimize by evidence and cost.",
+    "rubric_1_to_5": {
+      "score_1": "Says 'we would just add servers' or 'move to microservices' without identifying which component fails or why.",
+      "score_3": "Identifies a plausible bottleneck and a fix, but the reasoning is generic and the ordering of fixes is unjustified.",
+      "score_5": "Names the component and the exact saturation mechanism, orders fixes by cost and impact, and explains why other components can wait."
+    },
+    "follow_up_directions": [
+      "What is the first thing that breaks in a way users notice, rather than in a way your dashboards notice?",
+      "What would you do differently if you had one day rather than one month to prepare?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_bottleneck_003",
+    "short_title": "An Unexpected Performance Problem",
+    "question": "Describe a performance problem in your project that you did not expect. How did you locate it, what was the actual cause, and how did you verify the fix rather than assuming it worked?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_bottleneck",
+    "primary_skill": "Debugging Performance",
+    "secondary_skills": [
+      "Root Cause Analysis",
+      "Verification",
+      "Reflection"
+    ],
+    "concepts": [
+      "Debugging Performance",
+      "Root Cause Analysis",
+      "Verification",
+      "Reflection",
+      "root cause",
+      "regression",
+      "verification"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate describes a hypothesis-driven search — what they ruled out and in what order — reaches a specific cause (missing index, accidental O(n^2), chatty network calls, serialization cost), and verifies with a measurement rather than a feeling. Strong answers mention a guard added afterward.",
+    "rubric_1_to_5": {
+      "score_1": "Describes a fix with no investigation, or attributes the cause to something they never verified.",
+      "score_3": "Finds the real cause but skips the reasoning about what was ruled out, or claims success without a measurement.",
+      "score_5": "Walks through an ordered elimination, names the concrete cause, proves the fix with before/after numbers, and added a regression guard."
+    },
+    "follow_up_directions": [
+      "What did you rule out first, and what made you suspicious of the component that turned out to be guilty?",
+      "What would catch that regression automatically next time?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_tradeoff_001",
+    "short_title": "The Alternative You Rejected",
+    "question": "Tell me about an alternative you seriously considered and rejected in your project — a library, a datastore, a queue, or an architectural style. What made you reject it, and what did you give up by not choosing it?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_tradeoffs",
+    "primary_skill": "Trade-off Analysis",
+    "secondary_skills": [
+      "Decision Making",
+      "Opportunity Cost",
+      "Technical Judgment"
+    ],
+    "concepts": [
+      "Trade-off Analysis",
+      "Decision Making",
+      "Opportunity Cost",
+      "Technical Judgment",
+      "trade off",
+      "alternative",
+      "opportunity cost"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate states the alternative fairly, names the requirement or constraint that decided it (team familiarity, operational cost, latency, schema flexibility), and is honest about the capability they gave up. Weak answers strawman the alternative or claim there was no downside.",
+    "rubric_1_to_5": {
+      "score_1": "Presents the rejected option as obviously bad, or admits no real alternative was considered.",
+      "score_3": "Explains the rejection reasonably but understates the cost of the choice or cannot say what capability was lost.",
+      "score_5": "Represents the alternative on its merits, ties the decision to a concrete constraint, and names the specific capability or simplicity traded away."
+    },
+    "follow_up_directions": [
+      "Under what conditions would the rejected option have been the right call?",
+      "If you had to migrate to it now, what would the first painful step be?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_tradeoff_002",
+    "short_title": "Where You Shipped the Simpler Version",
+    "question": "Where did you knowingly ship the simpler, less correct solution because of time or complexity? What exactly was the shortcut, what did it cost later, and how did you keep it from becoming permanent?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_tradeoffs",
+    "primary_skill": "Pragmatic Engineering",
+    "secondary_skills": [
+      "Technical Debt",
+      "Scope Control",
+      "Follow-through"
+    ],
+    "concepts": [
+      "Pragmatic Engineering",
+      "Technical Debt",
+      "Scope Control",
+      "Follow-through",
+      "technical debt",
+      "shortcut",
+      "scope"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate names a real shortcut (hardcoded config, synchronous work in a request, no retry, manual step) rather than a humblebrag. Explains the concrete risk it introduced, whether it was later paid down or is still open, and what made it visible to the team — a comment, a ticket, a guardrail.",
+    "rubric_1_to_5": {
+      "score_1": "Claims to have never taken a shortcut, or describes one with no awareness of its cost.",
+      "score_3": "Names a real shortcut and its risk, but is vague about whether it was ever resolved or how the team tracked it.",
+      "score_5": "Names a specific shortcut, quantifies or describes its real cost, and shows the mechanism that kept it visible and either got it paid down or bounded its blast radius."
+    },
+    "follow_up_directions": [
+      "What would have happened if that shortcut had stayed in place for another year?",
+      "How do you decide the difference between acceptable debt and a latent incident?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_tradeoff_003",
+    "short_title": "A Decision a Reviewer Disagreed With",
+    "question": "Describe a technical decision in your project that a reviewer or teammate disagreed with. What was their argument, what was yours, and how was it actually resolved?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_tradeoffs",
+    "primary_skill": "Constructive Disagreement",
+    "secondary_skills": [
+      "Influence",
+      "Evidence-based Debate",
+      "Collaboration"
+    ],
+    "concepts": [
+      "Constructive Disagreement",
+      "Influence",
+      "Evidence-based Debate",
+      "Collaboration",
+      "disagreement",
+      "code review",
+      "influence"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate represents the other position accurately and without contempt, states their own reasoning with evidence rather than seniority, and describes a resolution — a test, a prototype, a reversible trial, or accepting the other view. Best answers admit when they were wrong.",
+    "rubric_1_to_5": {
+      "score_1": "Portrays the reviewer as irrational, or claims they never disagree with anyone.",
+      "score_3": "Describes the disagreement and outcome, but weakly represents the opposing argument or leaves out how it was settled.",
+      "score_5": "Steelmans the other view, argues from evidence, and explains the mechanism that settled it — including honestly conceding when they changed their mind."
+    },
+    "follow_up_directions": [
+      "What would have convinced you that you were wrong, and did you say that out loud at the time?",
+      "How did that disagreement change how you review other people's work now?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_fail_001",
+    "short_title": "The Hardest Bug You Isolated",
+    "question": "Describe the hardest bug you hit in your project. How did you isolate it — what did you rule out, in what order, and what turned out to be the actual root cause?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_failure",
+    "primary_skill": "Bug Isolation",
+    "secondary_skills": [
+      "Root Cause Analysis",
+      "Reproduction",
+      "Hypothesis Testing"
+    ],
+    "concepts": [
+      "Bug Isolation",
+      "Root Cause Analysis",
+      "Reproduction",
+      "Hypothesis Testing",
+      "debugging",
+      "root cause",
+      "reproduction"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate describes reproducing the bug, then an ordered elimination (recent changes, boundaries between components, logs and metrics, bisect, minimal repro) rather than random edits. Names a specific root cause and explains why the symptom misled them.",
+    "rubric_1_to_5": {
+      "score_1": "Describes trial-and-error edits with no reproduction and no identified root cause.",
+      "score_3": "Finds the cause eventually but the search is unstructured, or cannot explain why the symptom pointed elsewhere.",
+      "score_5": "Reproduces first, eliminates in a deliberate order, names the exact root cause, and explains the misleading symptom and how they confirmed the diagnosis before fixing it."
+    },
+    "follow_up_directions": [
+      "How did you first reproduce it, and how long did that take?",
+      "What made the symptom point away from the real cause?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_fail_002",
+    "short_title": "A Failure Your Tests Missed",
+    "question": "Tell me about a failure in your project that your tests did not catch. What was missing from your test design, and what did you add afterward?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_failure",
+    "primary_skill": "Test Design Gaps",
+    "secondary_skills": [
+      "Failure Modes",
+      "Test Strategy",
+      "Learning Loop"
+    ],
+    "concepts": [
+      "Test Design Gaps",
+      "Failure Modes",
+      "Test Strategy",
+      "Learning Loop",
+      "testing",
+      "coverage",
+      "regression"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate names a real gap — untested integration boundary, missing empty or error case, environment mismatch, timezone or ordering assumption — and describes the specific test or guard added. Strong answers explain the general class of gap, not just the one case.",
+    "rubric_1_to_5": {
+      "score_1": "Says the tests were fine or that the failure was impossible to anticipate.",
+      "score_3": "Names a real gap and a test added, but treats it as a one-off without generalizing.",
+      "score_5": "Identifies the class of gap, adds a test or guard that covers the class, and explains how they now choose what to test rather than chasing coverage."
+    },
+    "follow_up_directions": [
+      "What other failures in that same class might still be untested?",
+      "How did you decide that test was worth the maintenance cost?"
+    ],
+    "version": "2026.1"
+  },
+  {
+    "id": "proj_fail_003",
+    "short_title": "Failing in Front of People",
+    "question": "Describe a moment your project failed in front of real users, a reviewer, or a demo audience. What did you do in the first five minutes, and what did you change so it could not happen again?",
+    "role": "all_technical_roles",
+    "phase": "project_depth",
+    "question_type": "project-defence",
+    "category": "project_failure",
+    "primary_skill": "Recovery Under Pressure",
+    "secondary_skills": [
+      "Incident Handling",
+      "Communication",
+      "Prevention"
+    ],
+    "concepts": [
+      "Recovery Under Pressure",
+      "Incident Handling",
+      "Communication",
+      "Prevention",
+      "incident",
+      "demo failure",
+      "recovery"
+    ],
+    "difficulty": "Medium-Hard",
+    "estimated_duration_minutes": 6,
+    "source_basis": "industry_standard",
+    "source_urls": [
+      "https://amazon.jobs/content/en/how-we-hire/interview-prep/software-development-topics"
+    ],
+    "provenance": {
+      "kind": "curated_practice",
+      "basis": "industry_standard",
+      "family": "all_technical_roles",
+      "note": "Authored practice question derived from public interview guidance and technical references. Not a verbatim interview question from any company.",
+      "provenance_class": "source_listed"
+    },
+    "internal_expected_answer": "Candidate describes the immediate response — stabilize, communicate honestly, fall back to a known-good path — without blaming the environment, then names the concrete prevention: a health check, a fixture, a dry run, a feature flag, a rollback path.",
+    "rubric_1_to_5": {
+      "score_1": "Blames the demo environment or audience, with no immediate action and no prevention.",
+      "score_3": "Handles the moment competently but the prevention is vague or only covers that exact scenario.",
+      "score_5": "Shows calm triage and honest communication, then a specific systemic prevention that would cover a broader class of failure."
+    },
+    "follow_up_directions": [
+      "What did you tell the people watching, and how did you decide what to say?",
+      "What early signal would have warned you before the failure became visible?"
+    ],
+    "version": "2026.1"
   }
 ]
