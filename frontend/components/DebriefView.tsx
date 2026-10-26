@@ -56,6 +56,49 @@ export const DebriefView: React.FC<DebriefViewProps> = ({ session, turns, debrie
   const skills = debrief?.skill_breakdown || {};
   const nextSteps = debrief?.next_steps || [];
 
+  // A round ended with zero answers has no debrief. Say what happened and point
+  // at the next action instead of rendering a blank report.
+  if (!debrief) {
+    return (
+      <div className="space-y-6 sm:space-y-8">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-ink-secondary transition-colors hover:text-ink"
+          >
+            <ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />
+            <span>Back to dashboard</span>
+          </Link>
+        </div>
+
+        <Card className="space-y-4 p-5 sm:p-8">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary">
+            Round closed
+          </span>
+          <h1 className="font-question text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+            No debrief for this round
+          </h1>
+          <p className="max-w-prose text-sm leading-relaxed text-ink-secondary">
+            You ended this round before answering a question, so there is nothing
+            to assess. Nothing was scored and no draft was kept.
+          </p>
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+            <Link href="/interview" className={buttonClasses()}>
+              <span>Start a round</span>
+              <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/"
+              className={buttonClasses({ variant: "secondary" })}
+            >
+              <span>Go to dashboard</span>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const handleDisputeSubmit = async (turnId: string) => {
     if (!disputeClarification.trim()) return;
     setIsDisputing(true);

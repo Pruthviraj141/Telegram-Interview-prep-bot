@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { InterviewStudio } from "@/components/InterviewStudio";
-import { api, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
+import { api, ApiError, CandidateUser, InterviewSession, InterviewTurn } from "@/lib/api";
 import { speechSynth } from "@/lib/speech";
 import { cn, getErrorMessage } from "@/lib/utils";
 import {
@@ -141,6 +141,10 @@ function InterviewContent() {
   // inventing projects.
   const [hasConfirmedProfile, setHasConfirmedProfile] = useState<boolean>(false);
   const [lastConfig, setLastConfig] = useState<SetupConfig | null>(null);
+  // A round left open on the server. Surfaced so the user resumes instead of
+  // silently forking a second session. Only the id is required to resume, so
+  // the 409 path can recover without a second round-trip.
+  const [resumable, setResumable] = useState<{ id: string; label: string | null } | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -200,6 +204,14 @@ function InterviewContent() {
                 router.replace(`/interview/${resumeId}/debrief`);
                 return;
               }
+              if (sess.status === "abandoned" || sess.status === "cancelled") {
+                // Closed rounds have no debrief to open, so point at a new one.
+                setResumable(null);
+                setError(
+                  "That round was closed before it produced a debrief. Start a new round when you are ready."
+                );
+                return;
+              }
               const turns = sessRes.turns || [];
               const pendingTurn = [...turns]
                 .reverse()
@@ -216,6 +228,21 @@ function InterviewContent() {
             }
           } catch (e: unknown) {
             setError(getErrorMessage(e, "Could not resume that interview session."));
+          }
+        } else {
+          // No explicit resume link: ask the server whether a round is open.
+          try {
+            const activeRes = await api.getActiveInterviewSession();
+            if (activeRes?.session) {
+              const active = activeRes.session;
+              setResumable({
+                id: active.id,
+                label: active.target_role || null,
+              });
+            }
+          } catch {
+            // Failing this lookup must not block starting a fresh round; the
+            // create call still returns 409 with the active id if needed.
           }
         }
       } catch (err: unknown) {
@@ -247,7 +274,7 @@ function InterviewContent() {
     setDurationMode(config.durationMode);
   };
 
-  const handleStartSession = async () => {
+  const handleStartSession = async (replace = false) => {
     // Prime browser audio context right upon click gesture
     speechSynth.unlockAudio();
 
@@ -272,6 +299,7 @@ function InterviewContent() {
         duration_mode: durationMode,
         phase: phaseParam || undefined,
         drill_skill: drillParam || undefined,
+        replace,
       });
       const config: SetupConfig = { mode, interviewerStyle, durationMode };
       setLastConfig(config);
@@ -280,9 +308,22 @@ function InterviewContent() {
       } catch {
         // Remembering the setup is a nicety; storage may be unavailable.
       }
+      setResumable(null);
       setActiveSession(res.session);
       setCurrentTurn(res.current_turn);
     } catch (err: unknown) {
+      // The server refuses a second active round. Turn that into a resume
+      // affordance rather than a dead-end error.
+      const detail = err instanceof ApiError ? err.detail : null;
+      const activeId =
+        detail && typeof detail === "object" && typeof detail.active_id === "string"
+          ? detail.active_id
+          : null;
+      if (err instanceof ApiError && err.status === 409 && activeId) {
+        setResumable({ id: activeId, label: null });
+        setError(null);
+        return;
+      }
       setError(getErrorMessage(err, "Failed to initialize interview studio session."));
     } finally {
       setStarting(false);
@@ -363,6 +404,42 @@ function InterviewContent() {
             ) : undefined
           }
         />
+
+        {resumable && (
+          <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <History
+                aria-hidden="true"
+                className="mt-0.5 h-4 w-4 shrink-0 text-ink-secondary"
+              />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-ink">Round in progress</p>
+                <p className="text-xs text-ink-secondary">
+                  {resumable.label
+                    ? `You left a round unfinished for ${resumable.label}.`
+                    : "You left a round unfinished."}{" "}
+                  Pick it up, or close it and start fresh.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                size="sm"
+                onClick={() => router.replace(`/interview?resume=${resumable.id}`)}
+              >
+                Resume
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => handleStartSession(true)}
+                loading={starting}
+              >
+                Start fresh
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {error && (
           <div
@@ -707,7 +784,7 @@ function InterviewContent() {
 
               <Button
                 size="lg"
-                onClick={handleStartSession}
+                onClick={() => handleStartSession()}
                 loading={starting}
                 className="w-full gap-2.5"
               >
@@ -759,7 +836,7 @@ function InterviewContent() {
               </div>
               <Button
                 size="lg"
-                onClick={handleStartSession}
+                onClick={() => handleStartSession()}
                 loading={starting}
                 className="shrink-0 gap-2"
               >

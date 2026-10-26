@@ -132,6 +132,14 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
   // Modals & Errors
   const [showEndModal, setShowEndModal] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Once the round is finished the studio is a dead view: no unload guard and
+  // no navigation back into it.
+  const [roundClosed, setRoundClosed] = useState<boolean>(false);
+  // Whether at least one answer exists. Drives the end-confirm copy, because a
+  // zero-answer round ends without a debrief.
+  const [answeredSome, setAnsweredSome] = useState<boolean>(
+    initialSession.current_turn_index > 0 || initialTurn.evaluation_status === "completed"
+  );
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -150,15 +158,48 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
   useKeyboardInset();
 
-  // Ask the browser to confirm before a reload drops an active round.
+  // Ask the browser to confirm before a reload drops an active round. Once the
+  // round is closed this view is dead, so the guard must not fire.
   useEffect(() => {
+    if (roundClosed) return;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, []);
+  }, [roundClosed]);
+
+  // Leave the studio for good: drop the draft, silence the unload guard, and
+  // replace (never push) so Back cannot re-enter a finished round.
+  const closeRound = (href: string) => {
+    setRoundClosed(true);
+    clearDraft();
+    // Purge every draft for this session, not just the open question.
+    try {
+      const prefix = `ai_coach_draft_${session.id}_`;
+      for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(prefix)) localStorage.removeItem(key);
+      }
+    } catch {
+      // Storage may be unavailable; drafts are optional.
+    }
+    router.replace(href);
+  };
+
+  // Browser Back inside the studio must not silently drop the round. Keep a
+  // sentinel history entry and route Back through the same end-round confirm.
+  useEffect(() => {
+    if (roundClosed) return;
+    window.history.pushState({ studioGuard: true }, "");
+    const onPopState = () => {
+      window.history.pushState({ studioGuard: true }, "");
+      setShowEndModal(true);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [roundClosed]);
 
   const isPractice = session.mode === "practice";
   const typedWordCount = typedAnswer.trim() ? typedAnswer.trim().split(/\s+/).length : 0;
@@ -235,7 +276,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
       }
 
       if (data.session.status === "completed" || data.session.status === "partial_completed") {
-        router.push(`/interview/${session.id}/debrief`);
+        closeRound(`/interview/${session.id}/debrief`);
         return;
       }
 
@@ -285,6 +326,11 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     async function validateInitialTurn() {
       if (initialSession.status === "completed" || initialSession.status === "partial_completed") {
         router.replace(`/interview/${initialSession.id}/debrief`);
+        return;
+      }
+      // Stale or cancelled rounds have no studio: send the user back to setup.
+      if (initialSession.status === "abandoned" || initialSession.status === "cancelled") {
+        router.replace("/interview");
         return;
       }
       if (initialTurn.evaluation_status !== "completed") return;
@@ -436,9 +482,10 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     is_session_completed: boolean;
   }) => {
     setOrbState("idle");
+    setAnsweredSome(true);
 
     if (res.is_session_completed) {
-      router.push(`/interview/${session.id}/debrief`);
+      closeRound(`/interview/${session.id}/debrief`);
       return;
     }
 
@@ -459,7 +506,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
     if (pendingNextTurn) {
       applyNextTurn(pendingNextTurn);
     } else {
-      router.push(`/interview/${session.id}/debrief`);
+      closeRound(`/interview/${session.id}/debrief`);
     }
   };
 
@@ -511,8 +558,9 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
 
   const handleEndSessionEarly = async () => {
     try {
-      await api.endInterviewSession(session.id);
-      router.push(`/interview/${session.id}/debrief`);
+      const res = await api.endInterviewSession(session.id);
+      // With zero answers there is nothing to debrief: go back to setup.
+      closeRound(res.debrief_id ? `/interview/${session.id}/debrief` : "/interview");
     } catch (err: unknown) {
       setShowEndModal(false);
       setErrorMsg(getErrorMessage(err, "Could not wrap up this round. Please retry."));
@@ -1047,9 +1095,18 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                   End this round now?
                 </h3>
                 <p id="end-round-desc" className="text-xs text-ink-secondary leading-relaxed mt-1">
-                  Answers you already submitted are saved and scored. This question
-                  {typedAnswer.trim() ? " and the text you have typed" : ""} will not be scored.
-                  Your debrief covers the answers so far.
+                  {answeredSome ? (
+                    <>
+                      Answers you already submitted are saved and scored. This question
+                      {typedAnswer.trim() ? " and the text you have typed" : ""} will not be scored.
+                      Your debrief covers the answers so far.
+                    </>
+                  ) : (
+                    <>
+                      Nothing has been answered yet, so there is no debrief. This round is
+                      closed, your draft is discarded, and you return to setup.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -1066,7 +1123,7 @@ export const InterviewStudio: React.FC<InterviewStudioProps> = ({ initialSession
                 onClick={() => void handleEndSessionEarly()}
                 className="flex-1 py-2.5 rounded-xl bg-accent-strong text-on-accent hover:bg-accent-strong/90 text-xs font-semibold transition cursor-pointer min-h-[44px] sm:min-h-[40px]"
               >
-                End round &amp; view debrief
+                End round &amp; {answeredSome ? "view debrief" : "back to setup"}
               </button>
             </div>
           </div>

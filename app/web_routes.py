@@ -42,6 +42,10 @@ from app.services.web_interview_service import (
 
 logger = logging.getLogger(__name__)
 
+# A session in any of these states is finished for good: no answers may land
+# on it and ending it again must not regenerate a debrief.
+TERMINAL_SESSION_STATUSES = {"completed", "partial_completed", "abandoned", "cancelled"}
+
 # Request / Response Schemas
 class GroqKeyRequest(BaseModel):
     groq_key: str
@@ -72,6 +76,7 @@ class CreateSessionRequest(BaseModel):
     phase: Optional[str] = None  # 'start_drill', 'phase_1', 'phase_2', 'phase_3', 'phase_4'
     drill_skill: Optional[str] = None
     custom_categories: Optional[List[str]] = None
+    replace: bool = False  # abandon any existing active round first
 
 class SubmitTurnRequest(BaseModel):
     original_transcript: Optional[str] = None
@@ -465,6 +470,23 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         """
         enforce_onboarding_completed(user)
 
+        active = await db.get_active_web_interview_session(user["id"])
+        if active:
+            if not body.replace:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "code": "active_session_exists",
+                        "message": "You already have a round in progress. Resume it or start a new one.",
+                        "active_id": active["id"],
+                    },
+                )
+            await db.update_web_interview_session(
+                session_id=active["id"],
+                clerk_id=user["id"],
+                status="abandoned",
+            )
+
         session_id = f"sess_{uuid.uuid4().hex[:12]}"
         confirmed_profile = json.loads(user.get("confirmed_profile_json") or "{}")
 
@@ -544,6 +566,18 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             "session": session,
             "current_turn": current_turn
         }
+
+    @router.get("/interview/session/active")
+    async def get_active_interview_session(user: Dict[str, Any] = Depends(get_current_user)):
+        """Return the candidate's resumable round, if any. Declared before
+        /interview/session/{session_id} so 'active' is never read as an id."""
+        enforce_onboarding_completed(user)
+        session = await db.get_active_web_interview_session(user["id"])
+        if not session:
+            return {"session": None, "turns": []}
+        turns = await db.get_web_interview_turns(session["id"])
+        safe_turns = [sanitize_turn_for_client(t, is_realistic_mode=session.get("mode") == "realistic") for t in turns]
+        return {"session": session, "turns": safe_turns}
 
     @router.get("/interview/session/{session_id}")
     async def get_interview_session(
@@ -742,6 +776,13 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This turn has already been submitted. Retry it from practice mode instead."
+            )
+
+        # A finished session is immutable; reject writes that would revive it.
+        if session.get("status") in TERMINAL_SESSION_STATUSES:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This round has already ended. Start a new one to keep practising."
             )
 
         answer_text = body.corrected_transcript or body.original_transcript or body.typed_answer or ""
@@ -993,7 +1034,33 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         if not session:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
 
+        # Ending is idempotent: a finished round returns its stored debrief
+        # instead of generating a second one.
+        if session.get("status") in TERMINAL_SESSION_STATUSES:
+            stored = session.get("debrief") or None
+            return {
+                "session": session,
+                "debrief": stored,
+                "debrief_id": session_id if stored else None,
+            }
+
         turns = await db.get_web_interview_turns(session_id)
+        answered = [t for t in turns if t.get("evaluation_status") == "completed"]
+
+        # Nothing was answered: this is an abandoned round, not a debrief.
+        if not answered:
+            await db.update_web_interview_session(
+                session_id=session_id,
+                clerk_id=user["id"],
+                status="abandoned"
+            )
+            updated_session = await db.get_web_interview_session(session_id, user["id"])
+            return {
+                "session": updated_session,
+                "debrief": None,
+                "debrief_id": None,
+            }
+
         debrief = generate_interview_debrief(session, turns)
 
         status_val = "completed" if not debrief.get("is_partial") else "partial_completed"
@@ -1008,7 +1075,8 @@ def get_web_router(settings: Settings, db: Database, qb: QuestionBank) -> APIRou
         updated_session = await db.get_web_interview_session(session_id, user["id"])
         return {
             "session": updated_session,
-            "debrief": debrief
+            "debrief": debrief,
+            "debrief_id": session_id,
         }
 
     @router.delete("/interview/session/{session_id}")

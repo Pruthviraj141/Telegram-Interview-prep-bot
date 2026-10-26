@@ -6,11 +6,35 @@ import json
 import time
 import aiosqlite
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+# An `in_progress` session untouched for this long is lazily abandoned so a
+# forgotten tab can never block the candidate from starting a new round.
+ACTIVE_SESSION_TTL = timedelta(hours=12)
 
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _is_stale_active_session(session: Dict[str, Any]) -> bool:
+    """True when a session is `in_progress` but past its activity window."""
+    if session.get("status") != "in_progress":
+        return False
+    stamp = (
+        session.get("last_activity")
+        or session.get("updated_at")
+        or session.get("created_at")
+    )
+    if not stamp:
+        return False
+    try:
+        parsed = datetime.fromisoformat(stamp)
+    except (TypeError, ValueError):
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - parsed > ACTIVE_SESSION_TTL
 
 
 CREATE_TABLES_SQL = """
@@ -302,11 +326,12 @@ CREATE TABLE IF NOT EXISTS web_interview_sessions (
     target_role TEXT NOT NULL,
     seniority TEXT NOT NULL,
     difficulty TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'in_progress', -- 'in_progress', 'completed', 'partial_completed', 'cancelled'
+    status TEXT NOT NULL DEFAULT 'in_progress', -- 'in_progress', 'completed', 'partial_completed', 'abandoned', 'cancelled'
     current_turn_index INTEGER NOT NULL DEFAULT 0,
     blueprint_json TEXT NOT NULL,
     overall_score REAL,
     debrief_json TEXT,
+    last_activity TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(clerk_id) REFERENCES web_users(id) ON DELETE CASCADE
@@ -398,6 +423,29 @@ class Database:
             await db.execute("PRAGMA journal_mode = WAL;")
             await db.execute("PRAGMA foreign_keys = ON;")
             await db.executescript(CREATE_TABLES_SQL)
+            await db.commit()
+        await self._migrate_web_interview_sessions()
+
+    async def _migrate_web_interview_sessions(self) -> None:
+        """Additive, idempotent migration for session lifecycle columns."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("PRAGMA table_info(web_interview_sessions)")
+            columns = {row[1] for row in await cursor.fetchall()}
+            if "last_activity" not in columns:
+                await db.execute(
+                    "ALTER TABLE web_interview_sessions ADD COLUMN last_activity TEXT"
+                )
+            # Legacy rows never had the column; their last write is the best
+            # available activity stamp.
+            await db.execute("""
+                UPDATE web_interview_sessions
+                SET last_activity = COALESCE(last_activity, updated_at, created_at)
+                WHERE last_activity IS NULL
+            """)
+            await db.execute("""
+                CREATE INDEX IF NOT EXISTS idx_web_sessions_active
+                ON web_interview_sessions(clerk_id, status)
+            """)
             await db.commit()
 
     async def get_or_create_user(self, telegram_id: int) -> Dict[str, Any]:
@@ -1633,17 +1681,21 @@ class Database:
                 INSERT INTO web_interview_sessions (
                     id, clerk_id, mode, interviewer_style, duration_mode,
                     target_role, seniority, difficulty, status, current_turn_index,
-                    blueprint_json, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'in_progress', 0, ?, ?, ?)
+                    blueprint_json, last_activity, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'in_progress', 0, ?, ?, ?, ?)
             """, (
                 session_id, clerk_id, mode, interviewer_style, duration_mode,
-                target_role, seniority, difficulty, blueprint_json, now, now
+                target_role, seniority, difficulty, blueprint_json, now, now, now
             ))
             await db.commit()
             return await self.get_web_interview_session(session_id, clerk_id)
 
     async def get_web_interview_session(self, session_id: str, clerk_id: str) -> Optional[Dict[str, Any]]:
-        """Fetch a session ensuring clerk_id ownership."""
+        """Fetch a session ensuring clerk_id ownership.
+
+        A session left `in_progress` past ACTIVE_SESSION_TTL is lazily marked
+        `abandoned` here, so stale rounds self-heal on any read.
+        """
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute(
@@ -1651,13 +1703,42 @@ class Database:
                 (session_id, clerk_id)
             )
             row = await cursor.fetchone()
-            if row:
-                d = dict(row)
-                d["blueprint"] = json.loads(d["blueprint_json"] or "{}")
-                if d.get("debrief_json"):
-                    d["debrief"] = json.loads(d["debrief_json"])
-                return d
-            return None
+            if not row:
+                return None
+            d = dict(row)
+            if _is_stale_active_session(d):
+                now = utc_now_iso()
+                await db.execute("""
+                    UPDATE web_interview_sessions
+                    SET status = 'abandoned', last_activity = ?, updated_at = ?
+                    WHERE id = ? AND clerk_id = ?
+                """, (now, now, session_id, clerk_id))
+                await db.commit()
+                d["status"] = "abandoned"
+                d["last_activity"] = now
+                d["updated_at"] = now
+            d["blueprint"] = json.loads(d["blueprint_json"] or "{}")
+            if d.get("debrief_json"):
+                d["debrief"] = json.loads(d["debrief_json"])
+            return d
+
+    async def get_active_web_interview_session(self, clerk_id: str) -> Optional[Dict[str, Any]]:
+        """Return the candidate's single resumable session, if one exists."""
+        for _ in range(5):
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute("""
+                    SELECT id FROM web_interview_sessions
+                    WHERE clerk_id = ? AND status = 'in_progress'
+                    ORDER BY created_at DESC LIMIT 1
+                """, (clerk_id,))
+                row = await cursor.fetchone()
+            if not row:
+                return None
+            session = await self.get_web_interview_session(row["id"], clerk_id)
+            if session and session.get("status") == "in_progress":
+                return session
+        return None
 
     async def list_web_interview_sessions(self, clerk_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         """List past sessions for a candidate."""
@@ -1681,8 +1762,8 @@ class Database:
     async def update_web_interview_session(self, session_id: str, clerk_id: str, **kwargs) -> None:
         """Update interview session state or debrief."""
         now = utc_now_iso()
-        fields = ["updated_at = ?"]
-        params: List[Any] = [now]
+        fields = ["updated_at = ?", "last_activity = ?"]
+        params: List[Any] = [now, now]
         for k, v in kwargs.items():
             if k in {"blueprint", "debrief"}:
                 fields.append(f"{k}_json = ?")

@@ -72,7 +72,7 @@ export interface InterviewSession {
   target_role: string;
   seniority: string;
   difficulty: string;
-  status: "in_progress" | "completed" | "partial_completed" | "cancelled";
+  status: "in_progress" | "completed" | "partial_completed" | "abandoned" | "cancelled";
   current_turn_index: number;
   blueprint: any;
   overall_score?: number | null;
@@ -272,12 +272,16 @@ export const api = {
     phase?: string;
     drill_skill?: string;
     custom_categories?: string[];
+    replace?: boolean;
   }) =>
     fetchApi<{ session: InterviewSession; current_turn: InterviewTurn }>("/interview/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
+
+  getActiveInterviewSession: () =>
+    fetchApi<{ session: InterviewSession | null; turns: InterviewTurn[] }>("/interview/session/active"),
 
   getInterviewSession: (sessionId: string) =>
     fetchApi<{ session: InterviewSession; turns: InterviewTurn[] }>(`/interview/session/${sessionId}`),
@@ -343,9 +347,10 @@ export const api = {
     }),
 
   endInterviewSession: (sessionId: string) =>
-    fetchApi<{ session: InterviewSession; debrief: any }>(`/interview/session/${sessionId}/end`, {
-      method: "POST",
-    }),
+    fetchApi<{ session: InterviewSession; debrief: any | null; debrief_id: string | null }>(
+      `/interview/session/${sessionId}/end`,
+      { method: "POST" }
+    ),
 
   deleteInterviewSession: (sessionId: string) =>
     fetchApi<{ status: string }>(`/interview/session/${sessionId}`, { method: "DELETE" }),
